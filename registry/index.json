@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "updated": "2026-01-18T00:00:00Z",
+  "aspects": {
+    "alaric": {
+      "latest": "1.0.0",
+      "versions": {
+        "1.0.0": {
+          "published": "2026-01-18T00:00:00Z",
+          "url": "https://raw.githubusercontent.com/aimorphist/aspects/main/registry/aspects/alaric/aspect.yaml"
+        }
+      },
+      "metadata": {
+        "displayName": "Alaric the Wizard",
+        "tagline": "Quirky wizard, D&D expert, can run campaigns",
+        "publisher": "morphist",
+        "trust": "verified"
+      }
+    },
+    "default": {
+      "latest": "1.0.0",
+      "versions": {
+        "1.0.0": {
+          "published": "2026-01-18T00:00:00Z",
+          "url": "https://raw.githubusercontent.com/aimorphist/aspects/main/registry/aspects/default/aspect.yaml"
+        }
+      },
+      "metadata": {
+        "displayName": "Morphist Default",
+        "tagline": "Helpful voice AI assistant",
+        "publisher": "morphist",
+        "trust": "verified"
+      }
+    }
+  }
+}

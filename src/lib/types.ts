@@ -71,6 +71,7 @@ export interface InstalledAspect {
   source: 'registry' | 'github' | 'local';
   installedAt: string;
   sha256: string;
+  path?: string;  // For local installs - absolute path to aspect dir
 }
 
 /**
@@ -80,3 +81,28 @@ export type InstallSpec =
   | { type: 'registry'; name: string; version?: string }
   | { type: 'github'; owner: string; repo: string; ref?: string }
   | { type: 'local'; path: string };
+
+/** Registry index.json structure */
+export interface RegistryIndex {
+  version: number;
+  updated: string;
+  aspects: Record<string, RegistryAspect>;
+}
+
+export interface RegistryAspect {
+  latest: string;
+  versions: Record<string, RegistryVersion>;
+  metadata: {
+    displayName: string;
+    tagline: string;
+    publisher?: string;
+    trust: 'verified' | 'community';
+  };
+}
+
+export interface RegistryVersion {
+  published: string;
+  url: string;
+  sha256?: string;
+  size?: number;
+}
