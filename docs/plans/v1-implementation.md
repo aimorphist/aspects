@@ -363,13 +363,13 @@ type InstallSpec =
 
 ## Implementation Phases
 
-### Phase 1: Core CLI Scaffold ✨
+### Phase 1: Core CLI Scaffold ✅
 **Goal**: `npx aspects` runs and shows help
 
-- [ ] Set up package.json with bin entry
-- [ ] Install deps: `citty`, `consola`, `yaml`, `ofetch`
-- [ ] Create CLI entry point with command routing
-- [ ] Implement `--help` and `--version`
+- [x] Set up package.json with bin entry
+- [x] Install deps: `citty`, `consola`, `yaml`, `ofetch`
+- [x] Create CLI entry point with command routing
+- [x] Implement `--help` and `--version`
 
 ### Phase 2: Local Storage
 **Goal**: Can read/write to `~/.aspects/`

@@ -1,12 +1,29 @@
 {
   "name": "aspects",
-  "module": "index.ts",
+  "version": "0.1.0",
+  "description": "Package manager for AI personality aspects",
+  "author": "Morphist",
+  "license": "MIT",
   "type": "module",
-  "private": true,
-  "devDependencies": {
-    "@types/bun": "latest"
+  "bin": {
+    "aspects": "./dist/cli.js"
   },
-  "peerDependencies": {
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "bun run src/cli.ts",
+    "build": "bun build src/cli.ts --outdir dist --target node --format esm",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "citty": "^0.1.6",
+    "consola": "^3.2.3",
+    "ofetch": "^1.3.4",
+    "yaml": "^2.4.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
     "typescript": "^5"
   }
 }
