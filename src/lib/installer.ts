@@ -1,5 +1,6 @@
 import { mkdir, writeFile, readFile, stat } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
+import { ofetch } from 'ofetch';
 import type { InstallSpec, InstalledAspect, Aspect } from './types';
 import { parseAspectYaml, parseAspectFile } from './parser';
 import { getRegistryAspect, fetchAspectYaml } from './registry';
@@ -12,7 +13,7 @@ export type InstallResult =
   | {
       success: true;
       aspect: Aspect;
-      source: 'registry' | 'local';
+      source: 'registry' | 'github' | 'local';
       alreadyInstalled?: boolean;
     }
   | {
@@ -30,7 +31,7 @@ export async function installAspect(spec: InstallSpec): Promise<InstallResult> {
     case 'local':
       return installFromLocal(spec.path);
     case 'github':
-      return { success: false, error: 'GitHub install not yet supported. Coming in a future release!' };
+      return installFromGitHub(spec.owner, spec.repo, spec.ref);
   }
 }
 
@@ -39,7 +40,16 @@ export async function installAspect(spec: InstallSpec): Promise<InstallResult> {
  */
 async function installFromRegistry(name: string, version?: string): Promise<InstallResult> {
   // Fetch registry info
-  const registryAspect = await getRegistryAspect(name);
+  let registryAspect;
+  try {
+    registryAspect = await getRegistryAspect(name);
+  } catch (err) {
+    return { 
+      success: false, 
+      error: `Unable to reach registry: ${(err as Error).message}. Make sure you have network connectivity or try installing from a local path.` 
+    };
+  }
+
   if (!registryAspect) {
     return { success: false, error: `Aspect "${name}" not found in registry` };
   }
@@ -109,6 +119,78 @@ async function installFromRegistry(name: string, version?: string): Promise<Inst
   });
 
   return { success: true, aspect, source: 'registry' };
+}
+
+const DEFAULT_GITHUB_REF = 'main';
+
+/**
+ * Install from a GitHub repository.
+ * Fetches aspect.yaml from raw.githubusercontent.com
+ */
+async function installFromGitHub(
+  owner: string, 
+  repo: string, 
+  ref?: string
+): Promise<InstallResult> {
+  const targetRef = ref ?? DEFAULT_GITHUB_REF;
+  
+  // Build raw GitHub URL
+  const url = `https://raw.githubusercontent.com/${owner}/${repo}/${targetRef}/aspect.yaml`;
+  
+  // Fetch aspect.yaml
+  log.start(`Fetching from github:${owner}/${repo}@${targetRef}...`);
+  let yamlContent: string;
+  try {
+    yamlContent = await ofetch(url, { responseType: 'text' });
+  } catch (err) {
+    const message = (err as Error).message;
+    if (message.includes('404')) {
+      return { 
+        success: false, 
+        error: `No aspect.yaml found at github:${owner}/${repo}@${targetRef}. Make sure the repo exists and has an aspect.yaml in the root.` 
+      };
+    }
+    return { success: false, error: `Failed to fetch from GitHub: ${message}` };
+  }
+
+  // Parse and validate
+  const parseResult = parseAspectYaml(yamlContent);
+  if (!parseResult.success) {
+    return { success: false, error: `Invalid aspect.yaml: ${parseResult.errors.join(', ')}` };
+  }
+
+  if (parseResult.warnings.length > 0) {
+    parseResult.warnings.forEach(w => log.warn(w));
+  }
+
+  const aspect = parseResult.aspect;
+
+  // Check if already installed at same ref
+  const existing = await getInstalledAspect(aspect.name);
+  if (existing && existing.source === 'github' && existing.githubRef === targetRef) {
+    const existingAspect = await loadAspectFromPath(getAspectPath(aspect.name));
+    if (existingAspect && existing.sha256 === sha256(yamlContent)) {
+      return { success: true, aspect: existingAspect, source: 'github', alreadyInstalled: true };
+    }
+  }
+
+  // Store to ~/.aspects/aspects/<name>/
+  await ensureAspectsDir();
+  const aspectDir = getAspectPath(aspect.name);
+  await mkdir(aspectDir, { recursive: true });
+  await writeFile(join(aspectDir, 'aspect.yaml'), yamlContent);
+
+  // Update config
+  const hash = sha256(yamlContent);
+  await addInstalledAspect(aspect.name, {
+    version: aspect.version,
+    source: 'github',
+    installedAt: new Date().toISOString(),
+    sha256: hash,
+    githubRef: targetRef,
+  });
+
+  return { success: true, aspect, source: 'github' };
 }
 
 /**

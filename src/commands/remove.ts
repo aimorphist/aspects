@@ -1,5 +1,8 @@
+import { rm } from 'node:fs/promises';
 import { defineCommand } from 'citty';
 import { log } from '../utils/logger';
+import { getInstalledAspect, removeInstalledAspect } from '../lib/config';
+import { getAspectPath } from '../utils/paths';
 
 export default defineCommand({
   meta: {
@@ -13,8 +16,26 @@ export default defineCommand({
       required: true,
     },
   },
-  run({ args }) {
-    log.info(`remove command: ${args.name}`);
-    log.warn('Not yet implemented');
+  async run({ args }) {
+    const installed = await getInstalledAspect(args.name);
+    if (!installed) {
+      log.error(`Aspect "${args.name}" is not installed`);
+      process.exit(1);
+    }
+
+    // Remove from config
+    await removeInstalledAspect(args.name);
+
+    // Delete files if registry or github install (local installs just unregister)
+    if (installed.source === 'registry' || installed.source === 'github') {
+      const aspectDir = getAspectPath(args.name);
+      try {
+        await rm(aspectDir, { recursive: true });
+      } catch {
+        // Directory might not exist, that's fine
+      }
+    }
+
+    log.success(`Removed ${args.name}@${installed.version}`);
   },
 });

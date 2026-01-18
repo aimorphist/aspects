@@ -12,8 +12,16 @@ export async function fetchRegistryIndex(registryUrl?: string): Promise<Registry
   if (cachedIndex) return cachedIndex;
   
   const url = registryUrl ?? DEFAULT_REGISTRY_URL;
-  cachedIndex = await ofetch<RegistryIndex>(url);
-  return cachedIndex;
+  try {
+    const result = await ofetch(url, { parseResponse: JSON.parse });
+    if (!result) {
+      throw new Error('Registry returned empty response');
+    }
+    cachedIndex = result as RegistryIndex;
+    return cachedIndex;
+  } catch (err) {
+    throw new Error(`Failed to fetch registry from ${url}: ${(err as Error).message}`);
+  }
 }
 
 /**

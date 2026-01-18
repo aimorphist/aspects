@@ -20,8 +20,10 @@ export default defineCommand({
     console.log('Installed aspects:\n');
 
     for (const aspect of installed) {
-      const source = aspect.source === 'local' ? ' (local)' : '';
-      console.log(`  ${aspect.name}@${aspect.version}${source}`);
+      const sourceLabel = aspect.source === 'local' ? ' (local)' 
+        : aspect.source === 'github' ? ' (github)' 
+        : '';
+      console.log(`  ${aspect.name}@${aspect.version}${sourceLabel}`);
     }
 
     console.log();

@@ -71,7 +71,8 @@ export interface InstalledAspect {
   source: 'registry' | 'github' | 'local';
   installedAt: string;
   sha256: string;
-  path?: string;  // For local installs - absolute path to aspect dir
+  path?: string;      // For local installs - absolute path to aspect dir
+  githubRef?: string; // For github installs: tag/branch/commit used
 }
 
 /**

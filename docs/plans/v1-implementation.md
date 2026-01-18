@@ -387,31 +387,31 @@ type InstallSpec =
 - [x] Add validation with clear error messages
 - [x] Create sample aspects for testing (registry/aspects/)
 
-### Phase 4: Install Command
+### Phase 4: Install Command ✅
 **Goal**: `aspects install alaric` works
 
-- [ ] Implement resolver.ts (parse install specs)
-- [ ] Implement registry.ts (fetch index.json, aspect files)
-- [ ] Implement installer.ts (download, validate, store)
-- [ ] Wire up install command
-- [ ] Add sha256 verification
+- [x] Implement resolver.ts (parse install specs)
+- [x] Implement registry.ts (fetch index.json, aspect files)
+- [x] Implement installer.ts (download, validate, store)
+- [x] Wire up install command
+- [x] Add sha256 verification
 
-### Phase 5: Other Commands
+### Phase 5: Other Commands ✅
 **Goal**: Full CLI functionality
 
-- [ ] `aspects list` — show installed
-- [ ] `aspects info <name>` — show details
-- [ ] `aspects remove <name>` — uninstall
-- [ ] `aspects search [query]` — search registry
-- [ ] `aspects update [name]` — update installed
+- [x] `aspects list` — show installed
+- [x] `aspects info <name>` — show details
+- [x] `aspects remove <name>` — uninstall
+- [x] `aspects search [query]` — search registry
+- [x] `aspects update [name]` — update installed
 
-### Phase 6: Registry Bootstrap
+### Phase 6: Registry Bootstrap ✅
 **Goal**: Publish initial aspects
 
-- [ ] Create registry/index.json
-- [ ] Add `default` aspect
-- [ ] Add `alaric` aspect
-- [ ] Host via GitHub raw URLs initially
+- [x] Create registry/index.json
+- [x] Add `default` aspect
+- [x] Add `alaric` aspect
+- [x] Host via GitHub raw URLs initially
 
 ### Phase 7: GitHub Source Support
 **Goal**: `aspects install github:user/repo`
@@ -477,8 +477,8 @@ type InstallSpec =
 
 ## Success Criteria
 
-- [ ] `npx aspects install alaric` works on fresh machine
-- [ ] Installed aspect readable from any app via `~/.aspects/`
-- [ ] Clear error messages for invalid aspects
+- [x] `npx aspects install alaric` works on fresh machine
+- [x] Installed aspect readable from any app via `~/.aspects/`
+- [x] Clear error messages for invalid aspects
 - [ ] Registry discoverable via `aspects search`
 - [ ] Trust levels displayed for transparency

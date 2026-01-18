@@ -578,10 +578,10 @@ export default defineCommand({
 - [x] `bun run dev info alaric` shows details
 
 #### Manual Verification:
-- [ ] `bun run dev install alaric` fetches from registry (once pushed to GitHub)
-- [ ] Reinstalling same version shows "already installed"
-- [ ] Installing non-existent aspect shows clear error
-- [ ] Installing from invalid path shows clear error
+- [x] `bun run dev install alaric` fetches from registry (once pushed to GitHub)
+- [x] Reinstalling same version shows "already installed"
+- [x] Installing non-existent aspect shows clear error
+- [x] Installing from invalid path shows clear error
 
 ---
 
