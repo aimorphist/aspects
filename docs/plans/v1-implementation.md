@@ -379,13 +379,13 @@ type InstallSpec =
 - [x] Create default config on first run
 - [x] Wire up `list` command to show installed aspects
 
-### Phase 3: Parser + Validation
+### Phase 3: Parser + Validation ✅
 **Goal**: Can parse and validate aspect.yaml
 
-- [ ] Define JSON Schema for aspect.yaml
-- [ ] Implement parser.ts with YAML parsing
-- [ ] Add validation with clear error messages
-- [ ] Create sample aspects for testing
+- [x] Define Zod schema for aspect.yaml (src/lib/schema.ts)
+- [x] Implement parser.ts with YAML parsing
+- [x] Add validation with clear error messages
+- [x] Create sample aspects for testing (registry/aspects/)
 
 ### Phase 4: Install Command
 **Goal**: `aspects install alaric` works

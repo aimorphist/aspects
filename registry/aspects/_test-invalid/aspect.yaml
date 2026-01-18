@@ -1,0 +1,4 @@
+# Missing required fields for testing error messages
+schemaVersion: 1
+name: incomplete
+# missing displayName, tagline, prompt
