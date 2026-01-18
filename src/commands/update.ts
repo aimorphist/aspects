@@ -3,6 +3,7 @@ import { log } from '../utils/logger';
 import { listInstalledAspects } from '../lib/config';
 import { getRegistryAspect } from '../lib/registry';
 import { installAspect } from '../lib/installer';
+import { c, icons } from '../utils/colors';
 
 export default defineCommand({
   meta: {
@@ -26,7 +27,9 @@ export default defineCommand({
     const installed = await listInstalledAspects();
     
     if (installed.length === 0) {
-      log.info('No aspects installed');
+      console.log();
+      console.log(c.muted('  No aspects installed'));
+      console.log();
       return;
     }
 
@@ -41,7 +44,9 @@ export default defineCommand({
     }
 
     if (toCheck.length === 0) {
-      log.info('No registry-installed aspects to update');
+      console.log();
+      console.log(c.muted('  No registry-installed aspects to update'));
+      console.log();
       return;
     }
 
@@ -50,14 +55,15 @@ export default defineCommand({
     let updated = 0;
 
     for (const aspect of toCheck) {
-      // Skip local and github installs
+      // Skip local installs
       if (aspect.source === 'local') {
-        console.log(`  ${aspect.name}: local install, skipping`);
+        console.log(`  ${c.aspect(aspect.name)} ${c.muted('— local install, skipping')}`);
         continue;
       }
 
+      // Skip GitHub installs
       if (aspect.source === 'github') {
-        console.log(`  ${aspect.name}: github install, run 'aspects install github:...' to update`);
+        console.log(`  ${c.aspect(aspect.name)} ${c.muted('— github install, use')} ${c.highlight('aspects install github:...')} ${c.muted('to update')}`);
         continue;
       }
 
@@ -65,12 +71,12 @@ export default defineCommand({
       try {
         registryInfo = await getRegistryAspect(aspect.name);
       } catch {
-        console.log(`  ${aspect.name}: failed to check registry`);
+        console.log(`  ${c.aspect(aspect.name)} ${c.error('— failed to check registry')}`);
         continue;
       }
 
       if (!registryInfo) {
-        console.log(`  ${aspect.name}: not found in registry`);
+        console.log(`  ${c.aspect(aspect.name)} ${c.warn('— not found in registry')}`);
         continue;
       }
 
@@ -78,16 +84,16 @@ export default defineCommand({
       const latestVersion = registryInfo.latest;
 
       if (currentVersion === latestVersion) {
-        console.log(`  ${aspect.name}: up to date (${currentVersion})`);
+        console.log(`  ${c.aspect(aspect.name)} ${icons.success} ${c.muted(`up to date (${currentVersion})`)}`);
         continue;
       }
 
       updatesAvailable++;
 
       if (args.check) {
-        console.log(`  ${aspect.name}: ${currentVersion} → ${latestVersion} [update available]`);
+        console.log(`  ${c.aspect(aspect.name)} ${c.version(currentVersion)} ${icons.arrow} ${c.highlight(latestVersion)} ${c.tag('[update available]')}`);
       } else {
-        process.stdout.write(`  ${aspect.name}: ${currentVersion} → ${latestVersion}...`);
+        process.stdout.write(`  ${c.aspect(aspect.name)} ${c.version(currentVersion)} ${icons.arrow} ${c.highlight(latestVersion)} `);
         
         const result = await installAspect({ 
           type: 'registry', 
@@ -96,11 +102,11 @@ export default defineCommand({
         });
 
         if (result.success) {
-          console.log(' ✓');
+          console.log(icons.success);
           updated++;
         } else {
-          console.log(' ✗');
-          log.error(`    ${result.error}`);
+          console.log(icons.error);
+          console.log(c.error(`    ${result.error}`));
         }
       }
     }
@@ -109,16 +115,17 @@ export default defineCommand({
 
     if (args.check) {
       if (updatesAvailable > 0) {
-        log.info(`${updatesAvailable} update(s) available. Run without --check to install.`);
+        console.log(c.info(`${updatesAvailable} update(s) available. Run ${c.highlight('aspects update')} to install.`));
       } else {
-        log.success('All aspects up to date');
+        console.log(`${icons.success} ${c.success('All aspects up to date')}`);
       }
     } else {
       if (updated > 0) {
-        log.success(`Updated ${updated} aspect(s)`);
+        console.log(`${icons.success} ${c.success(`Updated ${updated} aspect(s)`)}`);
       } else if (updatesAvailable === 0) {
-        log.success('All aspects up to date');
+        console.log(`${icons.success} ${c.success('All aspects up to date')}`);
       }
     }
+    console.log();
   },
 });

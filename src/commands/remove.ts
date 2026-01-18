@@ -3,6 +3,7 @@ import { defineCommand } from 'citty';
 import { log } from '../utils/logger';
 import { getInstalledAspect, removeInstalledAspect } from '../lib/config';
 import { getAspectPath } from '../utils/paths';
+import { c, icons } from '../utils/colors';
 
 export default defineCommand({
   meta: {
@@ -36,6 +37,8 @@ export default defineCommand({
       }
     }
 
-    log.success(`Removed ${args.name}@${installed.version}`);
+    console.log();
+    console.log(`${icons.success} Removed ${c.aspect(args.name)}${c.version(`@${installed.version}`)}`);
+    console.log();
   },
 });

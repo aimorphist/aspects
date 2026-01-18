@@ -2,6 +2,7 @@ import { defineCommand } from 'citty';
 import { log } from '../utils/logger';
 import { loadInstalledAspect } from '../lib/aspect-loader';
 import { getInstalledAspect } from '../lib/config';
+import { c, icons } from '../utils/colors';
 
 export default defineCommand({
   meta: {
@@ -24,45 +25,47 @@ export default defineCommand({
 
     const aspect = await loadInstalledAspect(args.name);
     if (!aspect) {
-      log.error(`Failed to load aspect "${args.name}" - aspect.yaml may be corrupted`);
+      log.error(`Failed to load aspect "${args.name}" — aspect.yaml may be corrupted`);
       process.exit(1);
     }
 
     console.log();
-    console.log(`${aspect.displayName} (${aspect.name}@${aspect.version})`);
+    console.log(`${c.bold(aspect.displayName)} ${c.muted('(')}${c.aspect(aspect.name)}${c.version(`@${aspect.version}`)}${c.muted(')')}`);
     console.log();
-    console.log(`  ${aspect.tagline}`);
+    console.log(`  ${c.italic(aspect.tagline)}`);
     console.log();
 
-    if (aspect.publisher) {
-      console.log(`  Publisher:  ${aspect.publisher}`);
-    }
-    if (aspect.author) {
-      console.log(`  Author:     ${aspect.author}`);
-    }
-    if (aspect.license) {
-      console.log(`  License:    ${aspect.license}`);
+    const meta: [string, string][] = [];
+    if (aspect.publisher) meta.push(['Publisher', aspect.publisher]);
+    if (aspect.author) meta.push(['Author', aspect.author]);
+    if (aspect.license) meta.push(['License', aspect.license]);
+    meta.push(['Source', installed.source]);
+
+    if (meta.length > 0) {
+      for (const [label, value] of meta) {
+        console.log(`  ${c.label(label.padEnd(10))} ${c.value(value)}`);
+      }
     }
 
     if (aspect.voiceHints) {
       console.log();
-      console.log('  Voice hints:');
+      console.log(`  ${c.bold('Voice')}`);
       if (aspect.voiceHints.speed) {
-        console.log(`    Speed: ${aspect.voiceHints.speed}`);
+        console.log(`    ${c.label('Speed')}     ${aspect.voiceHints.speed}`);
       }
       if (aspect.voiceHints.emotions?.length) {
-        console.log(`    Emotions: ${aspect.voiceHints.emotions.join(', ')}`);
+        console.log(`    ${c.label('Emotions')}  ${aspect.voiceHints.emotions.join(', ')}`);
       }
       if (aspect.voiceHints.styleHints) {
-        console.log(`    Style: ${aspect.voiceHints.styleHints}`);
+        console.log(`    ${c.label('Style')}     ${c.muted(aspect.voiceHints.styleHints)}`);
       }
     }
 
     if (aspect.modes && Object.keys(aspect.modes).length > 0) {
       console.log();
-      console.log('  Modes:');
+      console.log(`  ${c.bold('Modes')}`);
       for (const [modeName, mode] of Object.entries(aspect.modes)) {
-        console.log(`    ${modeName} - ${mode.description}`);
+        console.log(`    ${c.highlight(modeName)} ${icons.arrow} ${c.muted(mode.description)}`);
       }
     }
 

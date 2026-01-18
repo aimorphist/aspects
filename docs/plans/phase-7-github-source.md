@@ -264,10 +264,10 @@ if (installed.source === 'registry' || installed.source === 'github') {
 - [x] `bun run dev remove <name>` works for GitHub installs
 
 #### Manual Verification:
-- [ ] Install from GitHub repo works
-- [ ] Reinstalling same ref shows "already installed"
-- [ ] Installing non-existent repo shows clear error
-- [ ] Installing repo without aspect.yaml shows clear error
+- [x] Install from GitHub repo works
+- [x] Reinstalling same ref shows "already installed"
+- [x] Installing non-existent repo shows clear error
+- [x] Installing repo without aspect.yaml shows clear error
 
 ---
 

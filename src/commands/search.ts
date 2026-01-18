@@ -1,6 +1,7 @@
 import { defineCommand } from 'citty';
 import { log } from '../utils/logger';
 import { fetchRegistryIndex } from '../lib/registry';
+import { c, icons } from '../utils/colors';
 
 export default defineCommand({
   meta: {
@@ -35,20 +36,27 @@ export default defineCommand({
       : aspects;
 
     if (matches.length === 0) {
+      console.log();
       if (query) {
-        log.info(`No aspects found matching "${args.query}"`);
+        console.log(c.muted(`  No aspects found matching "${args.query}"`));
       } else {
-        log.info('Registry is empty');
+        console.log(c.muted('  Registry is empty'));
       }
+      console.log();
       return;
     }
 
-    console.log(query ? `\nAspects matching "${args.query}":\n` : '\nAvailable aspects:\n');
+    console.log();
+    console.log(c.bold(`${icons.search} ${query ? `Aspects matching "${args.query}"` : 'Available aspects'}`));
+    console.log();
 
     for (const [name, info] of matches) {
-      const trust = info.metadata.trust === 'verified' ? ' ✓' : '';
-      console.log(`  ${name}@${info.latest}${trust}`);
-      console.log(`    ${info.metadata.tagline}`);
+      const verified = info.metadata.trust === 'verified' 
+        ? ` ${icons.success}` 
+        : '';
+      
+      console.log(`  ${c.aspect(name)}${c.version(`@${info.latest}`)}${verified}`);
+      console.log(`    ${c.muted(info.metadata.tagline)}`);
       console.log();
     }
   },

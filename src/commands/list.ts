@@ -1,6 +1,7 @@
 import { defineCommand } from 'citty';
 import { listInstalledAspects } from '../lib/config';
-import { log } from '../utils/logger';
+import { loadInstalledAspect } from '../lib/aspect-loader';
+import { c, icons } from '../utils/colors';
 
 export default defineCommand({
   meta: {
@@ -12,18 +13,30 @@ export default defineCommand({
     const installed = await listInstalledAspects();
 
     if (installed.length === 0) {
-      log.info('No aspects installed.');
-      log.info('Run `aspects install <name>` to install an aspect.');
+      console.log();
+      console.log(c.muted('  No aspects installed.'));
+      console.log(c.muted(`  Run ${c.highlight('aspects install <name>')} to get started.`));
+      console.log();
       return;
     }
 
-    console.log('Installed aspects:\n');
+    console.log();
+    console.log(c.bold(`${icons.package} Installed aspects`));
+    console.log();
 
-    for (const aspect of installed) {
-      const sourceLabel = aspect.source === 'local' ? ' (local)' 
-        : aspect.source === 'github' ? ' (github)' 
+    for (const installed of await listInstalledAspects()) {
+      const aspect = await loadInstalledAspect(installed.name);
+      const sourceLabel = installed.source === 'local' 
+        ? c.dim(' (local)') 
+        : installed.source === 'github' 
+        ? c.dim(' (github)') 
         : '';
-      console.log(`  ${aspect.name}@${aspect.version}${sourceLabel}`);
+      
+      const name = c.aspect(installed.name);
+      const version = c.version(`@${installed.version}`);
+      const tagline = aspect?.tagline ? c.muted(` — ${aspect.tagline}`) : '';
+      
+      console.log(`  ${name}${version}${sourceLabel}${tagline}`);
     }
 
     console.log();

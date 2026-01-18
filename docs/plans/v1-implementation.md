@@ -413,12 +413,12 @@ type InstallSpec =
 - [x] Add `alaric` aspect
 - [x] Host via GitHub raw URLs initially
 
-### Phase 7: GitHub Source Support
+### Phase 7: GitHub Source Support ✅
 **Goal**: `aspects install github:user/repo`
 
-- [ ] Parse github: specs
-- [ ] Fetch from GitHub releases or raw
-- [ ] Handle @ref for specific versions/commits
+- [x] Parse github: specs
+- [x] Fetch from GitHub releases or raw
+- [x] Handle @ref for specific versions/commits
 
 ### Phase 8: Trust & Signatures
 **Goal**: Verify aspect integrity
@@ -428,14 +428,14 @@ type InstallSpec =
 - [ ] Verify signatures on install (optional)
 - [ ] Display trust level in info/list
 
-### Phase 9: Polish
+### Phase 9: Polish ✅
 **Goal**: Production-ready
 
-- [ ] Pretty output with colors/spinners
-- [ ] Helpful error messages
-- [ ] Shell completions
-- [ ] README with examples
-- [ ] Publish to npm
+- [x] Pretty output with colors/spinners (picocolors)
+- [x] Helpful error messages
+- [ ] Shell completions (deferred)
+- [x] README with examples
+- [ ] Publish to npm (ready to publish)
 
 ---
 

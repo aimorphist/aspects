@@ -2,16 +2,17 @@ import { defineCommand } from 'citty';
 import { log } from '../utils/logger';
 import { parseInstallSpec } from '../lib/resolver';
 import { installAspect } from '../lib/installer';
+import { c, icons } from '../utils/colors';
 
 export default defineCommand({
   meta: {
     name: 'install',
-    description: 'Install an aspect from registry or local path',
+    description: 'Install an aspect from registry, GitHub, or local path',
   },
   args: {
     spec: {
       type: 'positional',
-      description: 'Aspect name, @scope/name, github:user/repo, or path',
+      description: 'Aspect name, github:user/repo, or ./path',
       required: true,
     },
   },
@@ -33,16 +34,18 @@ export default defineCommand({
 
     const { aspect, source, alreadyInstalled } = result;
 
-    if (alreadyInstalled) {
-      log.info(`${aspect.displayName} (${aspect.name}@${aspect.version}) already installed`);
-    } else {
-      log.success(`Installed ${aspect.displayName} (${aspect.name}@${aspect.version})`);
-    }
-
     console.log();
-    console.log(`  ${aspect.tagline}`);
-    if (source === 'local') {
-      console.log(`  Source: local`);
+    if (alreadyInstalled) {
+      console.log(`${icons.info} ${c.aspect(aspect.displayName)} ${c.muted(`(${aspect.name}@${aspect.version})`)} ${c.muted('already installed')}`);
+    } else {
+      console.log(`${icons.success} Installed ${c.bold(aspect.displayName)} ${c.muted(`(${aspect.name}@${aspect.version})`)}`);
+    }
+    
+    console.log();
+    console.log(`  ${c.italic(aspect.tagline)}`);
+    
+    if (source !== 'registry') {
+      console.log(`  ${c.label('Source')} ${source}`);
     }
     console.log();
   },
