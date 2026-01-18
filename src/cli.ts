@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { defineCommand, runMain } from 'citty';
 
+import init from './commands/init';
 import install from './commands/install';
 import list from './commands/list';
 import search from './commands/search';
@@ -15,6 +16,7 @@ const main = defineCommand({
     description: 'Package manager for AI personality aspects',
   },
   subCommands: {
+    init,
     install,
     list,
     search,
