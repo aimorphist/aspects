@@ -371,12 +371,13 @@ type InstallSpec =
 - [x] Create CLI entry point with command routing
 - [x] Implement `--help` and `--version`
 
-### Phase 2: Local Storage
+### Phase 2: Local Storage ✅
 **Goal**: Can read/write to `~/.aspects/`
 
-- [ ] Implement paths.ts (get config dir, ensure exists)
-- [ ] Implement config.ts (read/write config.json)
-- [ ] Create default config on first run
+- [x] Implement paths.ts (get config dir, ensure exists)
+- [x] Implement config.ts (read/write config.json)
+- [x] Create default config on first run
+- [x] Wire up `list` command to show installed aspects
 
 ### Phase 3: Parser + Validation
 **Goal**: Can parse and validate aspect.yaml

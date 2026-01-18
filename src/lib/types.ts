@@ -61,7 +61,7 @@ export interface AspectSummary {
 export interface AspectsConfig {
   version: 1;
   installed: Record<string, InstalledAspect>;
-  settings?: {
+  settings: {
     registryUrl?: string;
   };
 }
