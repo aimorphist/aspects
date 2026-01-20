@@ -33,6 +33,22 @@
         "publisher": "morphist",
         "trust": "verified"
       }
+    },
+    "aspect-creator": {
+      "latest": "1.0.0",
+      "versions": {
+        "1.0.0": {
+          "published": "2026-01-20T00:00:00Z",
+          "url": "https://raw.githubusercontent.com/aimorphist/aspects/main/registry/aspects/aspect-creator/aspect.json"
+        }
+      },
+      "metadata": {
+        "displayName": "Aspect Creator",
+        "tagline": "Design and create custom AI personality aspects",
+        "category": "creative",
+        "publisher": "aimorphist",
+        "trust": "verified"
+      }
     }
   },
   "sets": {
