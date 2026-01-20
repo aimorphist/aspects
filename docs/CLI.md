@@ -19,29 +19,31 @@ bun add -g aspects
 
 ```bash
 # Create a new aspect
-aspects init my-wizard
+aspects create my-wizard
 
-# Edit the generated aspect.yaml
-code ./my-wizard/aspect.yaml
+# Edit the generated aspect.json
+code ./my-wizard/aspect.json
 
-# Install locally for testing
-aspects install ./my-wizard
+# Add aspects to your local bundle
+aspects add alaric meditation-guide
 
-# Your aspect is now available in any app that uses aspects!
+# Your aspects are now tracked in aspects.json!
 ```
 
 ---
 
 ## Commands
 
-### `aspects init [path]`
+### `aspects create [path]`
 
 Create a new aspect interactively.
 
+**Aliases:** `c`, `new`, `n`
+
 ```bash
-aspects init                    # Create in current directory
-aspects init my-wizard          # Create in ./my-wizard/
-aspects init ~/aspects/healer   # Create at specific path
+aspects create                    # Create in current directory
+aspects create my-wizard          # Create in ./my-wizard/
+aspects n ~/aspects/healer        # Create at specific path (using alias)
 ```
 
 **Interactive prompts:**
@@ -58,39 +60,44 @@ aspects init ~/aspects/healer   # Create at specific path
 ? Add behavioral directives? › yes
 ? Keep responses brief by default? › yes
 ? Stay in character? › yes
-✓ Created ./my-wizard/aspect.yaml
+✓ Created ./my-wizard/aspect.json
 ```
 
-**Output:** Creates an `aspect.yaml` file with your configuration.
+**Output:** Creates an `aspect.json` file with your configuration.
 
 ---
 
-### `aspects install <spec>`
+### `aspects add <spec...>`
 
-Install an aspect from the registry, GitHub, or local path.
+Install aspect(s) to your local storage.
+
+**Aliases:** `install`, `get`, `a`, `i`, `g`
 
 ```bash
-# From registry
-aspects install alaric
-aspects install alaric@1.0.0
+# Install single aspect from registry
+aspects add alaric
+aspects get alaric               # Using 'get' alias
+aspects i alaric@1.0.0           # Using 'i' alias
+aspects g meditation-guide       # Using 'g' alias
+
+# Install multiple aspects at once
+aspects add alaric meditation-guide sherlock
 
 # From GitHub
-aspects install github:jane/meditation-guide
-aspects install github:jane/meditation-guide@v1.0.0
+aspects add github:jane/meditation-guide
 
 # From local path
-aspects install ./my-wizard
-aspects install /path/to/aspect.yaml
+aspects add ./my-wizard
 ```
 
-**Where aspects are stored:** `~/.aspects/aspects/<name>/aspect.yaml`
+**Where aspects are stored:** `~/.aspects/aspects/<name>/aspect.json`
 
 **Options:**
 
-| Flag          | Description                     |
-| ------------- | ------------------------------- |
-| `--force`     | Overwrite existing installation |
-| `--no-verify` | Skip SHA256 verification        |
+| Flag           | Description                              |
+| -------------- | ---------------------------------------- |
+| `--force`      | Overwrite existing installation          |
+| `--no-verify`  | Skip SHA256 verification                 |
 
 ---
 
@@ -192,6 +199,236 @@ aspects search --tag roleplay   # Filter by skill/tag
   gandalf-style@0.9.0
     Wise wizard inspired by classic fantasy
     Publisher: community | Trust: community
+```
+
+---
+
+### `aspects find [query]`
+
+Advanced search with boolean operators. Works on both local and registry aspects.
+
+```bash
+# Basic field search
+aspects find "category:roleplay"
+aspects find "tag:meditation"
+aspects find "publisher:morphist"
+
+# Boolean AND (default - space separated)
+aspects find "category:roleplay tag:fantasy"
+
+# Boolean OR
+aspects find "category:roleplay --or category:creative"
+
+# Boolean NOT
+aspects find "category:assistant --not tag:beginner"
+
+# Deep search (searches prompt content)
+aspects find "wizard --deep"
+
+# Combined operators
+aspects find "category:roleplay --or category:gaming --not tag:dark"
+
+# Search registry instead of local
+aspects find "trust:verified" --registry
+```
+
+**Search Fields:**
+
+| Field       | Description                    | Example                    |
+| ----------- | ------------------------------ | -------------------------- |
+| `name`      | Aspect name (slug)             | `name:alaric`              |
+| `category`  | Official category              | `category:roleplay`        |
+| `tag`       | Any tag                        | `tag:meditation`           |
+| `publisher` | Publisher name                 | `publisher:morphist`       |
+| `trust`     | Trust level                    | `trust:verified`           |
+
+**Operators:**
+
+| Operator  | Description                    | Example                              |
+| --------- | ------------------------------ | ------------------------------------ |
+| (space)   | AND - all conditions must match | `category:roleplay tag:fantasy`     |
+| `--or`    | OR - any condition can match   | `category:roleplay --or category:gaming` |
+| `--not`   | NOT - exclude matches          | `category:assistant --not tag:beginner` |
+| `--deep`  | Search prompt content too      | `wizard --deep`                      |
+
+**Options:**
+
+| Flag         | Short | Description                          |
+| ------------ | ----- | ------------------------------------ |
+| `--registry` | `-r`  | Search registry instead of local     |
+| `--json`     |       | Output as JSON                       |
+
+---
+
+### `aspects bundle [aspects...]`
+
+Bundle multiple aspects into a single JSON file. Supports find queries.
+
+```bash
+# Bundle specific local aspects
+aspects bundle alaric meditation-guide
+aspects bundle alaric meditation-guide -o my-bundle.json
+
+# Bundle from registry
+aspects bundle morphist/alaric morphist/default --registry
+
+# Bundle using find query
+aspects bundle --find "category:roleplay"
+aspects bundle --find "tag:meditation" --registry
+
+# Bundle with combined operators
+aspects bundle --find "category:assistant --not tag:beginner"
+
+# Bundle a set
+aspects bundle --set my-favorites
+
+# Mix: specific aspects + find results
+aspects bundle alaric --find "category:productivity"
+
+# Preview without creating file
+aspects bundle --find "category:roleplay" --dry-run
+```
+
+**Output format:**
+
+```json
+{
+  "bundleVersion": 1,
+  "createdAt": "2026-01-20T12:00:00Z",
+  "aspects": [
+    { "schemaVersion": 1, "name": "alaric", "displayName": "Alaric the Wizard", ... },
+    { "schemaVersion": 1, "name": "meditation-guide", ... }
+  ]
+}
+```
+
+**Options:**
+
+| Flag         | Short | Description                          |
+| ------------ | ----- | ------------------------------------ |
+| `--output`   | `-o`  | Output file (default: bundle.json)   |
+| `--find`     | `-f`  | Use find query to select aspects     |
+| `--set`      | `-s`  | Bundle all aspects from a set        |
+| `--registry` | `-r`  | Fetch from registry instead of local |
+| `--dry-run`  |       | Preview what would be bundled        |
+
+---
+
+### `aspects set <subcommand>`
+
+Manage aspect sets (collections of aspects).
+
+#### `aspects set create <name> [aspects...]`
+
+Create a new set.
+
+```bash
+# Interactive wizard
+aspects set create my-favorites
+
+# With aspects
+aspects set create my-favorites alaric meditation-guide
+```
+
+#### `aspects set list`
+
+List all local sets.
+
+```bash
+aspects set list
+```
+
+**Output:**
+
+```text
+📦 Local sets (2)
+
+  my-favorites (3 aspects)
+    alaric, meditation-guide, sherlock
+    Created: 2026-01-20
+
+  productivity-pack (2 aspects)
+    research-assistant, code-helper
+    Created: 2026-01-19
+```
+
+#### `aspects set add <set-name> <aspects...>`
+
+Add aspects to an existing set.
+
+```bash
+aspects set add my-favorites new-aspect
+```
+
+#### `aspects set remove <set-name> <aspects...>`
+
+Remove aspects from a set.
+
+```bash
+aspects set remove my-favorites old-aspect
+```
+
+#### `aspects set install <set-name>`
+
+Install all aspects in a set.
+
+```bash
+aspects set install my-favorites
+```
+
+#### `aspects set publish <set-name>`
+
+Publish a set to the registry. Requires qualified names (`publisher/name`).
+
+```bash
+aspects set publish my-favorites
+```
+
+**Publishing flow:**
+
+```text
+Publishing set "my-favorites"...
+  alaric → morphist/alaric ✓
+  meditation-guide → Found 2 matches:
+    1. jane/meditation-guide
+    2. bob/meditation-guide
+  Which one? (1/2): 1
+
+✓ Set ready for publishing with qualified names:
+  - morphist/alaric
+  - jane/meditation-guide
+
+? Create PR to registry? › yes
+```
+
+**Namespace rules:**
+
+- **Local sets:** Short names OK (resolved from installed aspects)
+- **Registry sets:** Must use `publisher/name` format (auto-resolved on publish)
+
+---
+
+### `aspects edit <name>`
+
+Interactively edit an installed aspect.
+
+```bash
+aspects edit alaric
+```
+
+**Interactive prompts:**
+
+```text
+✏️  Edit aspect: Alaric the Wizard
+
+Current values shown as defaults. Press Enter to keep.
+
+? Display name › Alaric the Wizard
+? Tagline › Quirky wizard, D&D expert, can run campaigns
+? Category › roleplay
+? Tags (comma-separated) › dnd, wizard, fantasy
+
+✓ Updated alaric
 ```
 
 ---

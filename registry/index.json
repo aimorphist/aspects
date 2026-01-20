@@ -1,6 +1,6 @@
 {
-  "version": 1,
-  "updated": "2026-01-18T00:00:00Z",
+  "version": 2,
+  "updated": "2026-01-20T00:00:00Z",
   "aspects": {
     "alaric": {
       "latest": "1.0.0",
@@ -33,6 +33,17 @@
         "publisher": "morphist",
         "trust": "verified"
       }
+    }
+  },
+  "sets": {
+    "morphist/starter-pack": {
+      "displayName": "Morphist Starter Pack",
+      "description": "Essential aspects for new users",
+      "aspects": ["morphist/alaric", "morphist/default"],
+      "publisher": "morphist",
+      "trust": "verified",
+      "createdAt": "2026-01-20T00:00:00Z",
+      "updatedAt": "2026-01-20T00:00:00Z"
     }
   }
 }

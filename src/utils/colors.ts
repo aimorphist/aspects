@@ -22,6 +22,7 @@ export const c = {
   value: (text: string) => pc.white(text),
   highlight: (text: string) => pc.bold(pc.cyan(text)),
   muted: (text: string) => pc.dim(text),
+  cmd: (text: string) => pc.cyan(text),
 };
 
 export const icons = {

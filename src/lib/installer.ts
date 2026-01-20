@@ -2,7 +2,7 @@ import { mkdir, writeFile, readFile, stat } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { ofetch } from 'ofetch';
 import type { InstallSpec, InstalledAspect, Aspect } from './types';
-import { parseAspectYaml, parseAspectFile } from './parser';
+import { parseAspectJson, parseAspectFile } from './parser';
 import { getRegistryAspect, fetchAspectYaml } from './registry';
 import { addInstalledAspect, getInstalledAspect } from './config';
 import { getAspectPath, ensureAspectsDir } from '../utils/paths';
@@ -83,7 +83,7 @@ async function installFromRegistry(name: string, version?: string): Promise<Inst
   }
 
   // Parse and validate
-  const parseResult = parseAspectYaml(yamlContent);
+  const parseResult = parseAspectJson(yamlContent);
   if (!parseResult.success) {
     return { success: false, error: `Invalid aspect.yaml: ${parseResult.errors.join(', ')}` };
   }
@@ -154,7 +154,7 @@ async function installFromGitHub(
   }
 
   // Parse and validate
-  const parseResult = parseAspectYaml(yamlContent);
+  const parseResult = parseAspectJson(yamlContent);
   if (!parseResult.success) {
     return { success: false, error: `Invalid aspect.yaml: ${parseResult.errors.join(', ')}` };
   }

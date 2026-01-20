@@ -8,6 +8,9 @@ export const ASPECTS_HOME = join(homedir(), '.aspects');
 /** Directory where aspect packages are stored */
 export const ASPECTS_DIR = join(ASPECTS_HOME, 'aspects');
 
+/** Directory where sets are stored */
+export const SETS_DIR = join(ASPECTS_HOME, 'sets');
+
 /** Path to the config file */
 export const CONFIG_PATH = join(ASPECTS_HOME, 'config.json');
 
@@ -17,6 +20,20 @@ export const CONFIG_PATH = join(ASPECTS_HOME, 'config.json');
  */
 export async function ensureAspectsDir(): Promise<void> {
   await mkdir(ASPECTS_DIR, { recursive: true });
+}
+
+/**
+ * Ensure the sets directory exists.
+ */
+export async function ensureSetsDir(): Promise<void> {
+  await mkdir(SETS_DIR, { recursive: true });
+}
+
+/**
+ * Get the sets directory path.
+ */
+export function getSetsDir(): string {
+  return SETS_DIR;
 }
 
 /**

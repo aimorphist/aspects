@@ -4,6 +4,7 @@ import { execSync } from "node:child_process";
 import { defineCommand } from "citty";
 import * as p from "@clack/prompts";
 import { OFFICIAL_CATEGORIES, type OfficialCategory } from "../lib/schema";
+import { listAllSets, loadSet, saveSet } from "./set";
 
 const REGISTRY_DIR = "registry/aspects";
 const INDEX_PATH = "registry/index.json";
@@ -43,7 +44,7 @@ const CATEGORY_OPTIONS: Array<{
 
 export default defineCommand({
   meta: {
-    name: "init",
+    name: "create",
     description: "Create a new aspect interactively",
   },
   args: {
@@ -325,6 +326,31 @@ export default defineCommand({
       p.log.info("1. Fork https://github.com/" + GITHUB_REPO);
       p.log.info("2. Clone your fork and run this command inside it");
       p.log.info("3. Or visit https://getaspects.com/create");
+    }
+
+    // Check for local sets and offer to add
+    const sets = await listAllSets();
+    if (sets.length > 0) {
+      console.log();
+      const addToSet = await p.select({
+        message: "Add this aspect to a set?",
+        options: [
+          ...sets.map((s) => ({
+            value: s.name,
+            label: `${s.displayName} (${s.aspects.length} aspects)`,
+          })),
+          { value: "__none__", label: "Don't add to a set" },
+        ],
+      });
+
+      if (!p.isCancel(addToSet) && addToSet !== "__none__") {
+        const set = await loadSet(addToSet as string);
+        if (set && !set.aspects.includes(answers.name)) {
+          set.aspects.push(answers.name);
+          await saveSet(set);
+          p.log.success(`Added to set: ${set.displayName}`);
+        }
+      }
     }
 
     p.outro("Happy aspecting! 🧙");

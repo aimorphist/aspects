@@ -1,0 +1,117 @@
+name: 🧙 New Aspect Submission
+description: Submit a new aspect to the Morphist registry
+title: "[Aspect] "
+labels: ["new-aspect", "needs-review"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Submit Your Aspect to the Registry
+        
+        Thank you for contributing to the Morphist aspects ecosystem! Please fill out the details below.
+        
+        **Before submitting:**
+        - [ ] I've tested my aspect locally with `aspects validate`
+        - [ ] My aspect follows the [schema guidelines](https://github.com/aimorphist/aspects/blob/main/docs/CLI.md#aspect-schema-v2)
+        - [ ] I understand community aspects are marked as "unverified" until reviewed
+
+  - type: input
+    id: name
+    attributes:
+      label: Aspect Name (slug)
+      description: Lowercase letters, numbers, and hyphens only. Must be unique.
+      placeholder: my-wizard
+    validations:
+      required: true
+
+  - type: input
+    id: display_name
+    attributes:
+      label: Display Name
+      description: Human-readable name for your aspect.
+      placeholder: My Wizard
+    validations:
+      required: true
+
+  - type: input
+    id: publisher
+    attributes:
+      label: Publisher (your GitHub username)
+      description: This will be used to identify you as the creator.
+      placeholder: your-github-username
+    validations:
+      required: true
+
+  - type: textarea
+    id: tagline
+    attributes:
+      label: Tagline
+      description: One-line description (max 200 characters).
+      placeholder: A wise and quirky wizard who loves riddles
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      description: Choose the best category for your aspect.
+      options:
+        - assistant
+        - roleplay
+        - creative
+        - productivity
+        - education
+        - gaming
+        - spiritual
+        - pundit
+        - guide
+    validations:
+      required: true
+
+  - type: textarea
+    id: aspect_json
+    attributes:
+      label: aspect.json Content
+      description: Paste your complete aspect.json file here.
+      placeholder: |
+        {
+          "schemaVersion": 1,
+          "name": "my-wizard",
+          "displayName": "My Wizard",
+          ...
+        }
+      render: json
+    validations:
+      required: true
+
+  - type: input
+    id: github_repo
+    attributes:
+      label: GitHub Repository (optional)
+      description: If you have a GitHub repo for this aspect, link it here.
+      placeholder: https://github.com/username/my-wizard-aspect
+
+  - type: textarea
+    id: additional_notes
+    attributes:
+      label: Additional Notes
+      description: Any additional context, testing notes, or special instructions.
+      placeholder: |
+        - Tested with Claude and GPT-4
+        - Works best with slow voice speed
+        - Inspired by classic fantasy wizards
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Terms
+      options:
+        - label: I confirm this aspect does not contain harmful, offensive, or malicious content
+          required: true
+        - label: I agree to the [MIT License](https://opensource.org/licenses/MIT) for this contribution
+          required: true
+        - label: I understand my aspect will be reviewed before being marked as "verified"
+          required: true

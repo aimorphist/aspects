@@ -1,5 +1,4 @@
 import { readFile } from 'node:fs/promises';
-import { parse as parseYaml } from 'yaml';
 import { ZodError } from 'zod';
 import { aspectSchema } from './schema';
 import type { Aspect } from './types';
@@ -16,7 +15,7 @@ export type ParseResult =
     };
 
 /**
- * Parse and validate an aspect.yaml file.
+ * Parse and validate an aspect.json file.
  */
 export async function parseAspectFile(filePath: string): Promise<ParseResult> {
   let content: string;
@@ -30,22 +29,22 @@ export async function parseAspectFile(filePath: string): Promise<ParseResult> {
     return { success: false, errors: [`Failed to read file: ${(err as Error).message}`] };
   }
 
-  return parseAspectYaml(content);
+  return parseAspectJson(content);
 }
 
 /**
- * Parse and validate aspect YAML content.
+ * Parse and validate aspect JSON content.
  */
-export function parseAspectYaml(content: string): ParseResult {
+export function parseAspectJson(content: string): ParseResult {
   let raw: unknown;
   try {
-    raw = parseYaml(content);
+    raw = JSON.parse(content);
   } catch (err) {
-    return { success: false, errors: [`Invalid YAML: ${(err as Error).message}`] };
+    return { success: false, errors: [`Invalid JSON: ${(err as Error).message}`] };
   }
 
   if (typeof raw !== 'object' || raw === null) {
-    return { success: false, errors: ['aspect.yaml must be a YAML object'] };
+    return { success: false, errors: ['aspect.json must be a JSON object'] };
   }
 
   const warnings: string[] = [];

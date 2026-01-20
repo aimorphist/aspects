@@ -8,6 +8,8 @@ export interface Aspect {
   version: string;
   displayName: string;
   tagline: string;
+  category?: string;
+  tags?: string[];
   icon?: string;
   author?: string;
   license?: string;
@@ -88,6 +90,18 @@ export interface RegistryIndex {
   version: number;
   updated: string;
   aspects: Record<string, RegistryAspect>;
+  sets?: Record<string, RegistrySet>;
+}
+
+/** Registry set entry (uses qualified names: publisher/name) */
+export interface RegistrySet {
+  displayName: string;
+  description?: string;
+  aspects: string[]; // Qualified names: ["morphist/alaric", "morphist/default"]
+  publisher: string;
+  trust: 'verified' | 'community';
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface RegistryAspect {
@@ -96,6 +110,8 @@ export interface RegistryAspect {
   metadata: {
     displayName: string;
     tagline: string;
+    category?: string;
+    tags?: string[];
     publisher?: string;
     trust: 'verified' | 'community';
   };

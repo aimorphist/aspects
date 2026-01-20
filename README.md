@@ -214,13 +214,11 @@ All submissions are automatically validated:
 - ✅ Security scan for prompt injection
 - ✅ Registry entry consistency
 
-### Coming Soon
+### Submit via Issue Form
 
-We're building easier ways to submit aspects:
+Don't want to use git? Submit directly via our issue template:
 
-- **Web App** — Visual form at getaspects.com/create
-- **CLI via npx** — `npx @aspect/cli create` (npm package coming)
-- **GitHub Issue Form** — Submit via browser without git
+**[Submit an Aspect →](https://github.com/aimorphist/aspects/issues/new?template=new-aspect.yml)**
 
 ## Trust Levels
 
@@ -251,35 +249,53 @@ console.log(aspect.prompt); // The personality prompt
 console.log(aspect.voiceHints); // Voice configuration
 ```
 
-## CLI Reference
+## CLI
 
 The Aspects CLI helps you create and manage aspects.
 
-> 🚧 **Note:** The CLI is not yet published to npm. For now, clone the repo and use `bun run dev`.
-
 ```bash
-# Clone the repo first
+# Install (npm coming soon, for now clone the repo)
 git clone https://github.com/aimorphist/aspects
-cd aspects
-bun install
+cd aspects && bun install
 
-# Create a new aspect (interactive wizard)
+# Create a new aspect
 bun run dev create
 
-# Validate all aspects
-bun run validate
+# Install aspects
+bun run dev add alaric gandalf
 
-# Security scan
-bun run scan
+# Search
+bun run dev search wizard
+
+# Publish to registry
+bun run dev publish
 ```
 
-### What the CLI Does
+### Commands
 
-- **Interactive wizard** — prompts for all fields with validation
-- **Auto-creates files** — puts aspect.json in the right place
-- **Updates index.json** — adds your registry entry automatically
-- **Git integration** — offers to commit and push for you
-- **Local validation** — check your aspect before submitting
+| Command | Description |
+|---------|-------------|
+| `create` | Interactive aspect wizard |
+| `add` | Install aspects |
+| `list` | List installed aspects |
+| `search` | Search registry |
+| `info` | Show aspect details |
+| `remove` | Uninstall aspect |
+| `validate` | Validate aspect.json |
+| `publish` | Submit to registry |
+
+See [CLI Documentation](./docs/CLI.md) for full reference.
+
+### Roadmap
+
+Planned features:
+
+- **`find`** — Advanced search with boolean operators (`-n wizard --not -t evil`)
+- **`edit`** — Edit existing aspects with prepopulated wizard
+- **`set`** — Manage collections of aspects
+- **`generate`** — AI-powered aspect creation
+
+See [CLI Roadmap](./docs/CLI-ROADMAP.md) for details.
 
 ## Development
 
