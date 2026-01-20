@@ -5,7 +5,6 @@
 
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
-import { parse as parseYaml } from "yaml";
 import { aspectSchema } from "../src/lib/schema";
 import {
   header,
@@ -57,15 +56,15 @@ function getChangedFiles(): string[] {
     // Git diff failed, fall through to scan all
   }
 
-  // Fallback: get all aspect.yaml files (for local testing or when on main)
+  // Fallback: get all aspect.json files (for local testing or when on main)
   console.log("⚠️  No PR changes detected, validating all aspects");
-  const output = execSync(`find ${ASPECTS_DIR} -name "aspect.yaml"`, {
+  const output = execSync(`find ${ASPECTS_DIR} -name "aspect.json"`, {
     encoding: "utf-8",
   });
   return output.trim().split("\n").filter(Boolean);
 }
 
-function validateAspectYaml(filePath: string): {
+function validateAspectJson(filePath: string): {
   valid: boolean;
   errors: string[];
 } {
@@ -80,10 +79,10 @@ function validateAspectYaml(filePath: string): {
 
   let parsed: unknown;
   try {
-    parsed = parseYaml(content);
+    parsed = JSON.parse(content);
   } catch (e) {
     errors.push(
-      `Invalid YAML: ${e instanceof Error ? e.message : "Unknown error"}`,
+      `Invalid JSON: ${e instanceof Error ? e.message : "Unknown error"}`,
     );
     return { valid: false, errors };
   }
@@ -131,7 +130,7 @@ function validateRegistryEntry(
   const latestVersion = entry.versions?.[entry.latest];
   if (latestVersion?.url) {
     const expectedUrlPattern = new RegExp(
-      `^https://raw\\.githubusercontent\\.com/.+/registry/aspects/${aspectName}/aspect\\.yaml$`,
+      `^https://raw\\.githubusercontent\\.com/.+/registry/aspects/${aspectName}/aspect\\.json$`,
     );
     if (!expectedUrlPattern.test(latestVersion.url)) {
       errors.push(`URL format invalid for ${aspectName}: ${latestVersion.url}`);
@@ -150,12 +149,12 @@ async function main() {
   const aspectFiles = changedFiles.filter(
     (f) =>
       f.startsWith(ASPECTS_DIR) &&
-      f.endsWith("aspect.yaml") &&
+      f.endsWith("aspect.json") &&
       !isTestFixture(f),
   );
 
   if (aspectFiles.length === 0) {
-    spinner.succeed("No aspect.yaml files to validate");
+    spinner.succeed("No aspect.json files to validate");
     blank();
     process.exit(0);
   }
@@ -177,8 +176,8 @@ async function main() {
   let failed = 0;
 
   for (const file of aspectFiles) {
-    // Extract aspect name from path: registry/aspects/{name}/aspect.yaml
-    const match = file.match(/registry\/aspects\/([^/]+)\/aspect\.yaml/);
+    // Extract aspect name from path: registry/aspects/{name}/aspect.json
+    const match = file.match(/registry\/aspects\/([^/]+)\/aspect\.json/);
     if (!match) {
       fileHeader(file);
       result(false, "Invalid path format");
@@ -190,11 +189,11 @@ async function main() {
 
     let fileHasErrors = false;
 
-    // Validate aspect.yaml
-    const yamlResult = validateAspectYaml(file);
-    if (!yamlResult.valid) {
+    // Validate aspect.json
+    const jsonResult = validateAspectJson(file);
+    if (!jsonResult.valid) {
       result(false, "Schema");
-      for (const err of yamlResult.errors) {
+      for (const err of jsonResult.errors) {
         detail(err);
       }
       fileHasErrors = true;

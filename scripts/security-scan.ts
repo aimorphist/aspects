@@ -5,7 +5,6 @@
 
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
-import { parse as parseYaml } from "yaml";
 import {
   header,
   fileHeader,
@@ -143,7 +142,7 @@ function getChangedFiles(): string[] {
 
   // Fallback: scan all aspects (for local testing or when on main)
   console.log("⚠️  No PR changes detected, scanning all aspects");
-  const output = execSync(`find ${ASPECTS_DIR} -name "aspect.yaml"`, {
+  const output = execSync(`find ${ASPECTS_DIR} -name "aspect.json"`, {
     encoding: "utf-8",
   });
   return output.trim().split("\n").filter(Boolean);
@@ -175,7 +174,7 @@ function scanAspectFile(filePath: string): ScanResult | null {
 
   let parsed: { prompt?: string };
   try {
-    parsed = parseYaml(content) as { prompt?: string };
+    parsed = JSON.parse(content) as { prompt?: string };
   } catch {
     return null;
   }
@@ -202,12 +201,12 @@ async function main() {
   const aspectFiles = changedFiles.filter(
     (f) =>
       f.startsWith(ASPECTS_DIR) &&
-      f.endsWith("aspect.yaml") &&
+      f.endsWith("aspect.json") &&
       !isTestFixture(f),
   );
 
   if (aspectFiles.length === 0) {
-    spinner.succeed("No aspect.yaml files to scan");
+    spinner.succeed("No aspect.json files to scan");
     blank();
     process.exit(0);
   }
@@ -220,7 +219,7 @@ async function main() {
 
   for (const file of aspectFiles) {
     // Extract aspect name from path
-    const match = file.match(/registry\/aspects\/([^/]+)\/aspect\.yaml/);
+    const match = file.match(/registry\/aspects\/([^/]+)\/aspect\.json/);
     const aspectName = match ? match[1] : file;
     fileHeader(aspectName!);
 

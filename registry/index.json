@@ -7,12 +7,13 @@
       "versions": {
         "1.0.0": {
           "published": "2026-01-18T00:00:00Z",
-          "url": "https://raw.githubusercontent.com/aimorphist/aspects/main/registry/aspects/alaric/aspect.yaml"
+          "url": "https://raw.githubusercontent.com/aimorphist/aspects/main/registry/aspects/alaric/aspect.json"
         }
       },
       "metadata": {
         "displayName": "Alaric the Wizard",
         "tagline": "Quirky wizard, D&D expert, can run campaigns",
+        "category": "roleplay",
         "publisher": "morphist",
         "trust": "verified"
       }
@@ -22,12 +23,13 @@
       "versions": {
         "1.0.0": {
           "published": "2026-01-18T00:00:00Z",
-          "url": "https://raw.githubusercontent.com/aimorphist/aspects/main/registry/aspects/default/aspect.yaml"
+          "url": "https://raw.githubusercontent.com/aimorphist/aspects/main/registry/aspects/default/aspect.json"
         }
       },
       "metadata": {
         "displayName": "Morphist Default",
         "tagline": "Helpful voice AI assistant",
+        "category": "assistant",
         "publisher": "morphist",
         "trust": "verified"
       }
