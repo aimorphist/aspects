@@ -12,6 +12,7 @@ export const OFFICIAL_CATEGORIES = [
   "gaming",
   "spiritual",
   "pundit",
+  "guide",
 ] as const;
 
 export type OfficialCategory = (typeof OFFICIAL_CATEGORIES)[number];
