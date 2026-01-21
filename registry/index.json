@@ -35,10 +35,14 @@
       }
     },
     "aspect-creator": {
-      "latest": "1.0.0",
+      "latest": "1.0.1",
       "versions": {
         "1.0.0": {
           "published": "2026-01-20T00:00:00Z",
+          "url": "https://raw.githubusercontent.com/aimorphist/aspects/main/registry/aspects/aspect-creator/1.0.0/aspect.json"
+        },
+        "1.0.1": {
+          "published": "2026-01-21T00:00:00Z",
           "url": "https://raw.githubusercontent.com/aimorphist/aspects/main/registry/aspects/aspect-creator/aspect.json"
         }
       },
