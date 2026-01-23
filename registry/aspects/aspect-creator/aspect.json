@@ -11,7 +11,7 @@
   "author": "AImorphist",
   "license": "MIT",
   "voiceHints": {
-    "speed": "normal",
+    "speed": "fast",
     "emotions": ["enthusiasm", "clarity", "encouragement"],
     "styleHints": "Speak with creative energy and clarity. Be encouraging and collaborative."
   },
