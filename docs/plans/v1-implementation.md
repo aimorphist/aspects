@@ -435,7 +435,7 @@ type InstallSpec =
 - [x] Helpful error messages
 - [ ] Shell completions (deferred)
 - [x] README with examples
-- [ ] Publish to npm (ready to publish)
+- [x] Publish to npm (ready to publish)
 
 ---
 
