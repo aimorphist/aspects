@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  tensorzero-server:
+    image: tensorzero/tensorzero:latest
+    ports:
+      - "3001:3001"
+    restart: unless-stopped
+    environment:
+      - TENSORZERO_PORT=3001
+    networks:
+      - tensorzero-network
+
+  tensorzero-ui:
+    image: tensorzero/ui:latest
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - TENSORZERO_API_URL=http://tensorzero-server:3001
+    depends_on:
+      - tensorzero-server
+    networks:
+      - tensorzero-network
+
+networks:
+  tensorzero-network:
+    driver: bridge
