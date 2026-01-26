@@ -3,12 +3,34 @@ import { join, dirname } from "node:path";
 import { execSync } from "node:child_process";
 import { defineCommand } from "citty";
 import * as p from "@clack/prompts";
-import { OFFICIAL_CATEGORIES, type OfficialCategory } from "../lib/schema";
+import { OFFICIAL_CATEGORIES, FIELD_LIMITS, type OfficialCategory } from "../lib/schema";
 import { listAllSets, loadSet, saveSet } from "./set";
 
 const REGISTRY_DIR = "registry/aspects";
 const INDEX_PATH = "registry/index.json";
 const GITHUB_REPO = "aimorphist/aspects";
+
+// Types for directives and instructions
+interface Directive {
+  id: string;
+  rule: string;
+  priority: "high" | "medium" | "low";
+}
+
+interface Instruction {
+  id: string;
+  rule: string;
+}
+
+// Generate a slug ID from rule text
+function generateIdFromRule(rule: string): string {
+  return rule
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .slice(0, 40);
+}
 
 // Category labels for display
 const CATEGORY_OPTIONS: Array<{
@@ -193,6 +215,119 @@ export default defineCommand({
           .filter(Boolean)
       : undefined;
 
+    // Directives & Instructions wizard step
+    p.log.message(`
+📋 Directives & Instructions
+
+Directives are MUST-follow rules — they get special emphasis
+across all LLM models (bold, XML tags, repetition).
+  Example: "Never break character under any circumstances"
+
+Instructions are general guidance — softer preferences for
+how the AI should behave.
+  Example: "Prefer shorter responses when possible"
+
+Keep it light! A few well-crafted rules beat many vague ones.
+`);
+
+    const directives: Directive[] = [];
+    const instructions: Instruction[] = [];
+    let addingRules = true;
+
+    while (addingRules) {
+      const totalCount = directives.length + instructions.length;
+      const hasAny = totalCount > 0;
+
+      // Show current count if any exist
+      if (hasAny) {
+        p.log.info(`Current: ${directives.length} directive${directives.length !== 1 ? "s" : ""}, ${instructions.length} instruction${instructions.length !== 1 ? "s" : ""}`);
+      }
+
+      // Check if approaching limit
+      if (totalCount >= FIELD_LIMITS.maxDirectives + FIELD_LIMITS.maxInstructions - 5) {
+        p.log.warn("You've added quite a few! Consider consolidating.");
+      }
+
+      const action = await p.select({
+        message: "What would you like to add?",
+        options: [
+          { value: "directive", label: "Add a directive (strict rule)", hint: "MUST-follow, emphasized across models" },
+          { value: "instruction", label: "Add an instruction (general guidance)", hint: "Softer preference" },
+          { value: "done", label: hasAny ? "Done — finish creating aspect" : "Skip — finish without adding any" },
+        ],
+      });
+
+      if (p.isCancel(action) || action === "done") {
+        addingRules = false;
+        continue;
+      }
+
+      if (action === "directive") {
+        if (directives.length >= FIELD_LIMITS.maxDirectives) {
+          p.log.warn(`Maximum ${FIELD_LIMITS.maxDirectives} directives reached.`);
+          continue;
+        }
+
+        const ruleText = await p.text({
+          message: "Enter the directive rule:",
+          placeholder: "Never break character under any circumstances",
+          validate: (value) => {
+            if (!value) return "Rule text is required";
+            if (value.length > FIELD_LIMITS.directiveRule) {
+              return `Rule must be ${FIELD_LIMITS.directiveRule} characters or less`;
+            }
+          },
+        });
+
+        if (p.isCancel(ruleText)) continue;
+
+        const priority = await p.select({
+          message: "Priority level:",
+          options: [
+            { value: "high", label: "High", hint: "Critical, always emphasized" },
+            { value: "medium", label: "Medium", hint: "Important but flexible" },
+            { value: "low", label: "Low", hint: "Nice-to-have preference" },
+          ],
+          initialValue: "high",
+        });
+
+        if (p.isCancel(priority)) continue;
+
+        directives.push({
+          id: generateIdFromRule(ruleText as string),
+          rule: ruleText as string,
+          priority: priority as "high" | "medium" | "low",
+        });
+
+        p.log.success(`Added directive #${directives.length}`);
+      } else if (action === "instruction") {
+        if (instructions.length >= FIELD_LIMITS.maxInstructions) {
+          p.log.warn(`Maximum ${FIELD_LIMITS.maxInstructions} instructions reached.`);
+          continue;
+        }
+
+        const ruleText = await p.text({
+          message: "Enter the instruction:",
+          placeholder: "Prefer shorter responses when possible",
+          validate: (value) => {
+            if (!value) return "Instruction text is required";
+            if (value.length > FIELD_LIMITS.instructionRule) {
+              return `Instruction must be ${FIELD_LIMITS.instructionRule} characters or less`;
+            }
+          },
+        });
+
+        if (p.isCancel(ruleText)) continue;
+
+        instructions.push({
+          id: generateIdFromRule(ruleText as string),
+          rule: ruleText as string,
+        });
+
+        p.log.success(`Added instruction #${instructions.length}`);
+      }
+    }
+
     // Build the aspect object
     const aspect: Record<string, unknown> = {
       schemaVersion: 1,
@@ -221,6 +356,15 @@ export default defineCommand({
       emotions: ["friendly"],
       styleHints: "Speak naturally and warmly.",
     };
+
+    // Add directives and instructions if any were created
+    if (directives.length > 0) {
+      aspect.directives = directives;
+    }
+
+    if (instructions.length > 0) {
+      aspect.instructions = instructions;
+    }
 
     // Generate prompt based on style
     aspect.prompt = generatePrompt(

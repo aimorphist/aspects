@@ -37,6 +37,12 @@ export const FIELD_LIMITS = {
   maxModes: 10,
   modeDescription: 500,
   modeCritical: 1000,
+  directiveId: 50,
+  directiveRule: 500,
+  instructionId: 50,
+  instructionRule: 500,
+  maxDirectives: 25,
+  maxInstructions: 25,
 } as const;
 
 /**
@@ -184,6 +190,53 @@ export const aspectSchema = z.object({
         .optional(),
       skills: z.array(z.string()).optional(),
     })
+    .optional(),
+
+  directives: z
+    .array(
+      z.object({
+        id: z
+          .string()
+          .max(
+            FIELD_LIMITS.directiveId,
+            `directive id must be ${FIELD_LIMITS.directiveId} chars or less`,
+          ),
+        rule: z
+          .string()
+          .max(
+            FIELD_LIMITS.directiveRule,
+            `directive rule must be ${FIELD_LIMITS.directiveRule} chars or less`,
+          ),
+        priority: z.enum(["high", "medium", "low"]),
+      }),
+    )
+    .max(
+      FIELD_LIMITS.maxDirectives,
+      `maximum ${FIELD_LIMITS.maxDirectives} directives allowed`,
+    )
+    .optional(),
+
+  instructions: z
+    .array(
+      z.object({
+        id: z
+          .string()
+          .max(
+            FIELD_LIMITS.instructionId,
+            `instruction id must be ${FIELD_LIMITS.instructionId} chars or less`,
+          ),
+        rule: z
+          .string()
+          .max(
+            FIELD_LIMITS.instructionRule,
+            `instruction rule must be ${FIELD_LIMITS.instructionRule} chars or less`,
+          ),
+      }),
+    )
+    .max(
+      FIELD_LIMITS.maxInstructions,
+      `maximum ${FIELD_LIMITS.maxInstructions} instructions allowed`,
+    )
     .optional(),
 
   prompt: z
