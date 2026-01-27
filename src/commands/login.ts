@@ -1,0 +1,134 @@
+import { defineCommand } from 'citty';
+import { log } from '../utils/logger';
+import { c, icons } from '../utils/colors';
+import { getAuth, setAuthTokens, isLoggedIn } from '../lib/config';
+import { initiateDeviceAuth, pollDeviceAuth } from '../lib/api-client';
+
+export default defineCommand({
+  meta: {
+    name: 'login',
+    description: 'Authenticate with the aspects registry',
+  },
+  async run() {
+    // Check if already logged in
+    const auth = await getAuth();
+    if (auth && await isLoggedIn()) {
+      console.log();
+      console.log(`${icons.info} Already logged in as ${c.bold(`@${auth.username}`)}`);
+      console.log(c.muted('  Run "aspects logout" to sign out first.'));
+      console.log();
+      return;
+    }
+
+    console.log();
+    log.start('Requesting authorization...');
+
+    let deviceCode;
+    try {
+      deviceCode = await initiateDeviceAuth();
+    } catch (err) {
+      log.error(`Failed to initiate login: ${(err as Error).message}`);
+      process.exit(1);
+    }
+
+    // Display instructions
+    console.log();
+    console.log(`  ${c.bold('Please visit this URL and enter the code:')}`);
+    console.log(`  ${c.highlight(deviceCode.verification_uri_complete)}`);
+    console.log();
+    console.log(`  Code: ${c.bold(deviceCode.user_code)}`);
+    console.log();
+
+    // Try to open browser
+    try {
+      const { exec } = await import('node:child_process');
+      const platform = process.platform;
+      const openCmd = platform === 'darwin' ? 'open'
+        : platform === 'win32' ? 'start'
+        : 'xdg-open';
+      exec(`${openCmd} "${deviceCode.verification_uri_complete}"`);
+    } catch {
+      // Browser open is best-effort
+    }
+
+    console.log(c.muted('  Waiting for authorization... (Press Ctrl+C to cancel)'));
+    console.log();
+
+    // Poll for authorization
+    let interval = deviceCode.interval * 1000;
+    const expiresAt = Date.now() + deviceCode.expires_in * 1000;
+
+    while (Date.now() < expiresAt) {
+      await new Promise(r => setTimeout(r, interval));
+
+      try {
+        const result = await pollDeviceAuth(deviceCode.device_code, deviceCode.code_verifier);
+
+        if (result.ok && result.access_token) {
+          // Calculate expiry
+          const expiresIn = result.expires_in ?? 3600;
+          const expiresAtDate = new Date(Date.now() + expiresIn * 1000).toISOString();
+
+          // We need a username - decode from token or use a placeholder
+          // The API should ideally return the username; for now extract from token
+          const username = extractUsernameFromToken(result.access_token) ?? 'user';
+
+          await setAuthTokens({
+            accessToken: result.access_token,
+            refreshToken: result.refresh_token,
+            expiresAt: expiresAtDate,
+            username,
+          });
+
+          console.log(`${icons.success} Authorized as ${c.bold(`@${username}`)}`);
+          console.log(c.muted('  Access token stored in ~/.aspects/config.json'));
+          console.log();
+          return;
+        }
+
+        if (!result.ok) {
+          switch (result.status) {
+            case 'pending':
+              // Keep polling
+              continue;
+            case 'slow_down':
+              interval *= 2;
+              continue;
+            case 'expired':
+              log.error('Authorization code expired. Please run "aspects login" again.');
+              process.exit(1);
+              break;
+            case 'denied':
+              log.error('Authorization denied.');
+              process.exit(1);
+              break;
+            default:
+              log.error(`Unexpected status: ${result.status}`);
+              process.exit(1);
+          }
+        }
+      } catch (err) {
+        // Network errors during polling — keep trying
+        continue;
+      }
+    }
+
+    log.error('Authorization timed out. Please run "aspects login" again.');
+    process.exit(1);
+  },
+});
+
+/**
+ * Attempt to extract username from a JWT token payload.
+ * Returns null if the token is not a valid JWT or doesn't contain a username.
+ */
+function extractUsernameFromToken(token: string): string | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const payload = JSON.parse(Buffer.from(parts[1]!, 'base64url').toString());
+    return payload.username ?? payload.sub ?? payload.preferred_username ?? null;
+  } catch {
+    return null;
+  }
+}

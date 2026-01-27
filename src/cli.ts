@@ -16,6 +16,8 @@ import publish from "./commands/publish";
 import set from "./commands/set";
 import edit from "./commands/edit";
 import bundle from "./commands/bundle";
+import login from "./commands/login";
+import logout from "./commands/logout";
 
 const main = defineCommand({
   meta: {
@@ -51,6 +53,10 @@ const main = defineCommand({
     set,
     edit,
     bundle,
+
+    // Auth
+    login,
+    logout,
   },
 });
 

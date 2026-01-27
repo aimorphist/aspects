@@ -314,7 +314,7 @@ export default defineCommand({
 
         // Load full aspect for deep search
         const aspectPath = aspectInfo.path || getAspectPath(name);
-        const parseResult = await parseAspectFile(`${aspectPath}/aspect.yaml`);
+        const parseResult = await parseAspectFile(`${aspectPath}/aspect.json`);
         if (!parseResult.success) continue;
 
         const aspect = parseResult.aspect;

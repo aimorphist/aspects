@@ -26,7 +26,7 @@ async function listLocalAspects(): Promise<Array<{ name: string; path: string; a
 
   for (const [name, info] of Object.entries(config.installed)) {
     const aspectPath = (info as { path?: string }).path || getAspectPath(name);
-    const parseResult = await parseAspectFile(join(aspectPath, "aspect.yaml"));
+    const parseResult = await parseAspectFile(join(aspectPath, "aspect.json"));
     if (parseResult.success) {
       results.push({ name, path: aspectPath, aspect: parseResult.aspect });
     }
@@ -206,7 +206,7 @@ export default defineCommand({
     }
 
     // Save updated aspect
-    const aspectPath = join(selectedAspect.path, "aspect.yaml");
+    const aspectPath = join(selectedAspect.path, "aspect.json");
     const content = await readFile(aspectPath, "utf-8");
     
     // Simple YAML update - replace values in existing file
@@ -259,7 +259,7 @@ export default defineCommand({
     await writeFile(aspectPath, updatedContent);
 
     console.log();
-    console.log(`${icons.success} Updated ${c.bold(selectedAspect.name)}/aspect.yaml`);
+    console.log(`${icons.success} Updated ${c.bold(selectedAspect.name)}/aspect.json`);
     console.log(`  ${c.muted(`Changed: ${changes.join(", ")}`)}`);
     console.log();
   },

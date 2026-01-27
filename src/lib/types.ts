@@ -1,5 +1,5 @@
 /**
- * Aspect package schema (parsed from aspect.yaml)
+ * Aspect package schema (parsed from aspect.json)
  */
 export interface Aspect {
   schemaVersion: number;
@@ -66,6 +66,14 @@ export interface AspectsConfig {
   settings: {
     registryUrl?: string;
   };
+  auth?: AuthTokens;
+}
+
+export interface AuthTokens {
+  accessToken: string;
+  refreshToken?: string;
+  expiresAt: string;
+  username: string;
 }
 
 export interface InstalledAspect {
@@ -89,6 +97,7 @@ export type InstallSpec =
 export interface RegistryIndex {
   version: number;
   updated: string;
+  total?: number;
   aspects: Record<string, RegistryAspect>;
   sets?: Record<string, RegistrySet>;
 }
@@ -122,4 +131,101 @@ export interface RegistryVersion {
   url: string;
   sha256?: string;
   size?: number;
+}
+
+// --- API Response Types ---
+
+export interface ApiError {
+  ok: false;
+  error: string;
+  message: string;
+}
+
+export interface ApiSearchResult {
+  total: number;
+  results: Array<{
+    name: string;
+    displayName: string;
+    tagline: string;
+    category: string;
+    publisher: string;
+    version: string;
+    trust: 'verified' | 'community';
+    downloads: number;
+  }>;
+}
+
+export interface ApiAspectDetail {
+  name: string;
+  publisher: string;
+  latest: string;
+  created: string;
+  modified: string;
+  trust: 'verified' | 'community';
+  stats: {
+    downloads: {
+      total: number;
+      weekly: number;
+    };
+  };
+  versions: Record<string, {
+    published: string;
+    sha256: string;
+    size: number;
+    deprecated?: string;
+    aspect: Aspect;
+  }>;
+}
+
+export interface ApiVersionContent {
+  name: string;
+  version: string;
+  content: Aspect;
+  sha256: string;
+  size: number;
+  publishedAt: string;
+}
+
+export interface ApiPublishResponse {
+  ok: true;
+  name: string;
+  version: string;
+  url: string;
+}
+
+export interface ApiDeviceCode {
+  ok: true;
+  device_code: string;
+  user_code: string;
+  verification_uri: string;
+  verification_uri_complete: string;
+  code_verifier: string;
+  expires_in: number;
+  interval: number;
+}
+
+export interface ApiDevicePoll {
+  ok: boolean;
+  status?: 'pending' | 'slow_down' | 'expired' | 'denied';
+  error?: string;
+  access_token?: string;
+  refresh_token?: string;
+  token_type?: string;
+  expires_in?: number;
+}
+
+export interface ApiStats {
+  total_aspects: number;
+  total_downloads: number;
+  weekly_downloads: number;
+  top_aspects: Array<{ name: string; downloads: number }>;
+  by_category: Record<string, number>;
+}
+
+export interface ApiCategories {
+  categories: Array<{
+    id: string;
+    name: string;
+    description: string;
+  }>;
 }

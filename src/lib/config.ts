@@ -1,6 +1,8 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { CONFIG_PATH, ensureAspectsDir } from '../utils/paths';
-import type { AspectsConfig } from './types';
+import type { AspectsConfig, AuthTokens } from './types';
+
+const DEFAULT_REGISTRY_API_URL = 'http://localhost:5173/api/v1';
 
 /**
  * Default config for new installations
@@ -86,4 +88,62 @@ export async function listInstalledAspects(): Promise<
     name,
     ...info,
   }));
+}
+
+// --- Auth helpers ---
+
+/**
+ * Get the registry API base URL from config or default.
+ */
+export async function getRegistryUrl(): Promise<string> {
+  const config = await readConfig();
+  return config.settings.registryUrl ?? DEFAULT_REGISTRY_API_URL;
+}
+
+/**
+ * Get stored auth token, or null if not logged in.
+ */
+export async function getAuthToken(): Promise<string | null> {
+  const config = await readConfig();
+  if (!config.auth?.accessToken) return null;
+
+  // Check if token is expired
+  if (config.auth.expiresAt && new Date(config.auth.expiresAt) < new Date()) {
+    return null;
+  }
+
+  return config.auth.accessToken;
+}
+
+/**
+ * Get full auth info, or null if not logged in.
+ */
+export async function getAuth(): Promise<AuthTokens | null> {
+  const config = await readConfig();
+  return config.auth ?? null;
+}
+
+/**
+ * Check if user is currently logged in with a valid token.
+ */
+export async function isLoggedIn(): Promise<boolean> {
+  return (await getAuthToken()) !== null;
+}
+
+/**
+ * Store auth tokens after successful login.
+ */
+export async function setAuthTokens(tokens: AuthTokens): Promise<void> {
+  const config = await readConfig();
+  config.auth = tokens;
+  await writeConfig(config);
+}
+
+/**
+ * Clear auth tokens (logout).
+ */
+export async function clearAuth(): Promise<void> {
+  const config = await readConfig();
+  delete config.auth;
+  await writeConfig(config);
 }

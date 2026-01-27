@@ -6,7 +6,7 @@ import pc from "picocolors";
 import { c, icons } from "../utils/colors";
 import { getAspectPath } from "../utils/paths";
 import { readConfig } from "../lib/config";
-import { fetchRegistryIndex, fetchAspectYaml, getRegistryAspect } from "../lib/registry";
+import { fetchRegistryIndex, fetchAspectContent } from "../lib/registry";
 import type { Aspect } from "../lib/types";
 import { getSetsDir } from "../utils/paths";
 
@@ -131,7 +131,7 @@ async function loadRegistryAspects(): Promise<Aspect[]> {
     try {
       const versionInfo = entry.versions[entry.latest];
       if (versionInfo?.url) {
-        const yamlContent = await fetchAspectYaml(versionInfo.url);
+        const yamlContent = await fetchAspectContent(versionInfo.url);
         const aspect = JSON.parse(yamlContent);
         aspects.push(aspect);
       }
@@ -211,7 +211,7 @@ export default defineCommand({
             if (entry) {
               const versionInfo = entry.versions[entry.latest];
               if (versionInfo?.url) {
-                const content = await fetchAspectYaml(versionInfo.url);
+                const content = await fetchAspectContent(versionInfo.url);
                 const aspect = JSON.parse(content);
                 aspectsToBundle.push(aspect);
               }
@@ -268,13 +268,13 @@ export default defineCommand({
           if (useRegistry) {
             const index = await fetchRegistryIndex();
             const name = aspectName.includes("/")
-              ? aspectName.split("/")[1]
+              ? aspectName.split("/")[1]!
               : aspectName;
             const entry = index.aspects[name];
             if (entry) {
               const versionInfo = entry.versions[entry.latest];
               if (versionInfo?.url) {
-                const content = await fetchAspectYaml(versionInfo.url);
+                const content = await fetchAspectContent(versionInfo.url);
                 const aspect = JSON.parse(content);
                 if (!aspectsToBundle.some((a) => a.name === aspect.name)) {
                   aspectsToBundle.push(aspect);

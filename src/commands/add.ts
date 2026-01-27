@@ -40,7 +40,7 @@ export default defineCommand({
         continue;
       }
 
-      const result = await installAspect(spec);
+      const result = await installAspect(spec, { force: !!args.force });
 
       if (!result.success) {
         results.push({ spec: specStr, success: false, error: result.error });
