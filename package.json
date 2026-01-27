@@ -45,7 +45,11 @@
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "bun run build",
     "validate": "bun run scripts/validate-pr.ts",
-    "scan": "bun run scripts/security-scan.ts"
+    "scan": "bun run scripts/security-scan.ts",
+    "test": "bun test tests/unit",
+    "test:unit": "bun test tests/unit",
+    "test:integration": "ASPECTS_REGISTRY_URL=http://localhost:5173/api/v1 bun test tests/integration",
+    "test:all": "bun test tests"
   },
   "dependencies": {
     "@clack/prompts": "^0.11.0",

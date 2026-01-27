@@ -2,7 +2,20 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { CONFIG_PATH, ensureAspectsDir } from '../utils/paths';
 import type { AspectsConfig, AuthTokens } from './types';
 
-const DEFAULT_REGISTRY_API_URL = 'http://localhost:5173/api/v1';
+const DEFAULT_REGISTRY_API_URL = 'https://getaspects.com/api/v1';
+
+/**
+ * Resolve registry URL from env, config, or default.
+ * Priority: ASPECTS_REGISTRY_URL env var > config setting > default
+ */
+export function resolveRegistryUrl(
+  envUrl: string | undefined,
+  configUrl: string | undefined,
+): string {
+  if (envUrl) return envUrl;
+  if (configUrl) return configUrl;
+  return DEFAULT_REGISTRY_API_URL;
+}
 
 /**
  * Default config for new installations
@@ -97,7 +110,7 @@ export async function listInstalledAspects(): Promise<
  */
 export async function getRegistryUrl(): Promise<string> {
   const config = await readConfig();
-  return config.settings.registryUrl ?? DEFAULT_REGISTRY_API_URL;
+  return resolveRegistryUrl(process.env.ASPECTS_REGISTRY_URL, config.settings.registryUrl);
 }
 
 /**
