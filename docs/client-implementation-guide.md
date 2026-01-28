@@ -1,6 +1,6 @@
-# CLI Implementation Guide
+# Registry API Client Implementation Guide
 
-> A comprehensive guide for implementing the aspects CLI client that consumes the Registry API.
+> A comprehensive guide for implementing any client (CLI, web, mobile, or third-party integration) that consumes the Registry API.
 
 ---
 
@@ -8,53 +8,49 @@
 
 1. [Overview](#overview)
 2. [Architecture](#architecture)
-3. [Local Storage Structure](#local-storage-structure)
-4. [API Reference](#api-reference)
-5. [Authentication Flow](#authentication-flow)
-6. [Core Commands](#core-commands)
-7. [Implementation Patterns](#implementation-patterns)
-8. [HTTP Client Requirements](#http-client-requirements)
-9. [Example Request/Response Flows](#example-requestresponse-flows)
-10. [Error Handling](#error-handling)
-11. [Publishing Workflow](#publishing-workflow)
-12. [Testing Checklist](#testing-checklist)
+3. [API Reference](#api-reference)
+4. [Authentication Flow](#authentication-flow)
+5. [Core Operations](#core-operations)
+6. [Implementation Patterns](#implementation-patterns)
+7. [HTTP Client Requirements](#http-client-requirements)
+8. [Example Request/Response Flows](#example-requestresponse-flows)
+9. [Error Handling](#error-handling)
+10. [Publishing Workflow](#publishing-workflow)
+11. [Client Integration Tests](#client-integration-tests)
 
 ---
 
 ## Overview
 
-The **aspects CLI** is a command-line tool that allows developers to:
+Any client consuming the Registry API can perform these core operations:
 
-- **Install** aspects from the registry into their local `~/.aspects/` directory
-- **Search** the registry for aspects by name, category, or keywords
-- **Publish** new aspects to the registry
+- **Fetch** aspects from the registry by name, version, or content hash
+- **Search** the registry for aspects by keyword, category, or trust level
+- **Share** installed aspects via content-addressed blake3 hashes
+- **Publish** new aspects to the registry (requires authentication)
 - **Manage authentication** via device authorization flow (PKCE)
-- **List** installed aspects
-- **View details** about published aspects
+- **Retrieve statistics** about registry contents and downloads
+- **Browse categories** and discover available aspects
 
-### NPM-style UX
+### Supported Client Types
 
-The CLI mimics npm's familiar mental model:
+This guide applies to:
 
-```bash
-aspects install alaric                  # Install latest version
-aspects install alaric@1.0.0            # Install specific version
-aspects search wizard                   # Search by keyword
-aspects search --category roleplay      # Filter by category
-aspects publish                         # Publish from aspect.json
-aspects login                           # Authenticate (device flow)
-aspects logout                          # Clear stored tokens
-aspects list                            # Show installed aspects
-aspects info alaric                     # Show aspect details
-```
+- **CLI tools** — Command-line interfaces for fetching and publishing
+- **Web frontends** — Dashboards for browsing, searching, and managing aspects
+- **Mobile apps** — Native applications that consume aspects
+- **Third-party integrations** — Any service that integrates with the registry
+
+Each client type may implement these operations differently based on its platform, but all use the same underlying Registry API.
 
 ### Design Principles
 
 1. **Registry-first** — All operations go through the API, not static files
 2. **Privacy-preserving** — No user tracking, aggregate stats only
-3. **Offline-capable** — Works with cached registry data
-4. **Fast** — Caches registry locally, validates before publishing
-5. **Clear errors** — User-friendly messages, helpful hints
+3. **Offline-capable** — Clients can cache registry data locally
+4. **Authentication flexible** — Device flow for CLI, sessions for web, bearer tokens for integrations
+5. **Stateless** — API is stateless; client handles local state management
+6. **NPM-style UX** — Familiar mental model for developers
 
 ---
 
@@ -63,21 +59,21 @@ aspects info alaric                     # Show aspect details
 ### System Flow
 
 ```
-┌─────────────────┐
-│   aspects CLI   │
-│  (user types)   │
-└────────┬────────┘
-         │
-         ▼
-┌──────────────────────────────────┐
-│   Local State (~/.aspects/)       │
-│   ├── config.json                │
-│   ├── cache/registry.json         │
-│   └── aspects/[name]@[ver]/       │
-│       └── aspect.json             │
-└────────┬─────────────────────────┘
-         │
-         ▼
+┌──────────────────────────┐
+│   Client                 │
+│ (CLI, Web, Mobile, etc.) │
+└────────────┬─────────────┘
+             │
+             ▼
+┌──────────────────────────────┐
+│   Client Local State         │
+│   (Optional: cache data)     │
+│   ├── tokens                 │
+│   ├── cached registry        │
+│   └── local storage          │
+└────────────┬─────────────────┘
+             │
+             ▼
 ┌────────────────────────────────────────────────┐
 │   Registry API                                 │
 │   (https://api.getaspects.com/v1)              │
@@ -89,138 +85,52 @@ aspects info alaric                     # Show aspect details
 │   POST /aspects (with auth)                    │
 │   POST /auth/device (device flow)              │
 │   POST /auth/device/poll (polling)             │
+│   GET  /aspects/by-hash/:hash                  │
+│   DELETE /aspects/:name/:version (with auth)   │
 │   GET  /stats                                  │
 │   GET  /categories                             │
-└────────┬─────────────────────────────────────────┘
-         │
-         ▼
+└────────────┬─────────────────────────────────────┘
+             │
+             ▼
 ┌──────────────────────────┐
 │   PostgreSQL Database    │
 │   (registry data)        │
 └──────────────────────────┘
 ```
 
-### Command Flow Examples
+### Typical Client Workflow
 
-**Install:**
+**Fetch an aspect:**
 ```
-aspects install alaric@1.0.0
+Client calls GET /api/v1/aspects/:name/:version
   ↓
-  Check ~/.aspects/cache/registry.json (or fetch /api/v1/registry)
+  API returns full aspect.json content
   ↓
-  Call GET /api/v1/aspects/alaric/1.0.0
+  Client stores/uses aspect data (implementation-specific)
   ↓
-  Save to ~/.aspects/aspects/alaric@1.0.0/aspect.json
-  ↓
-  Update download count (server-side)
+  Server increments download count
 ```
 
-**Publish:**
+**Search for aspects:**
 ```
-aspects publish
+Client calls GET /api/v1/search?q=...&category=...
   ↓
-  Read local aspect.json
+  API returns paginated results with metadata
   ↓
-  Validate locally (schema, size, naming)
+  Client displays results to user
+```
+
+**Publish an aspect:**
+```
+Client loads aspect.json
   ↓
-  Read token from ~/.aspects/config.json
+  Client validates locally (schema, size, naming)
   ↓
-  POST /api/v1/aspects with Authorization header
+  Client obtains auth token (via device flow or other method)
   ↓
-  Handle success or error response
-```
-
-**Search:**
-```
-aspects search wizard
+  Client POSTs to /api/v1/aspects with Authorization header
   ↓
-  Call GET /api/v1/search?q=wizard
-  ↓
-  Display formatted results
-```
-
----
-
-## Local Storage Structure
-
-The CLI stores all state in `~/.aspects/` directory. This includes configuration, cached registry data, and installed aspects.
-
-### Directory Tree
-
-```
-~/.aspects/
-├── config.json                    # Configuration & auth tokens
-├── cache/
-│   └── registry.json              # Cached registry index (5 min TTL)
-└── aspects/                       # Installed aspects
-    ├── alaric@1.0.0/
-    │   └── aspect.json
-    ├── alaric@2.0.0/
-    │   └── aspect.json
-    └── helper@1.5.0/
-        └── aspect.json
-```
-
-### config.json Structure
-
-```json
-{
-  "version": 1,
-  "registryUrl": "https://api.getaspects.com/v1",
-  "lastUpdated": "2026-01-26T12:00:00Z",
-  "auth": {
-    "accessToken": "access_token_value",
-    "refreshToken": "refresh_token_value",
-    "expiresAt": "2026-02-26T12:00:00Z",
-    "username": "username"
-  }
-}
-```
-
-### cache/registry.json Structure
-
-```json
-{
-  "version": 1,
-  "updated": "2026-01-26T12:00:00Z",
-  "total": 42,
-  "timestamp": "2026-01-26T12:05:30Z",
-  "aspects": {
-    "alaric": {
-      "latest": "1.0.0",
-      "versions": ["1.0.0", "0.9.0"],
-      "metadata": {
-        "displayName": "Alaric the Wizard",
-        "tagline": "Quirky wizard, D&D expert",
-        "category": "roleplay",
-        "publisher": "morphist",
-        "trust": "verified"
-      }
-    }
-  }
-}
-```
-
-### aspect.json Stored Format
-
-Each installed aspect is stored with the full `aspect.json` content returned from the API:
-
-```json
-{
-  "schemaVersion": 1,
-  "name": "alaric",
-  "publisher": "morphist",
-  "version": "1.0.0",
-  "displayName": "Alaric the Wizard",
-  "tagline": "Quirky wizard, D&D expert",
-  "category": "roleplay",
-  "tags": ["dnd", "wizard", "fantasy"],
-  "voiceHints": {
-    "speed": "slow",
-    "emotions": ["curiosity", "warmth"]
-  },
-  "prompt": "## You are Alaric the Wizard\n\nYou are..."
-}
+  Server validates and returns success or error
 ```
 
 ---
@@ -299,16 +209,6 @@ GET /api/v1/registry
 - Header: `Cache-Control: public, max-age=300, stale-while-revalidate=60`
 - ETag support for 304 Not Modified
 
-**CLI Usage:**
-
-```bash
-# Fetch fresh registry
-aspects search
-
-# Check for available updates
-aspects update
-```
-
 ---
 
 ### Endpoint: GET /aspects/:name
@@ -342,7 +242,7 @@ GET /api/v1/aspects/alaric
   "versions": {
     "1.0.0": {
       "published": "2026-01-20T14:30:00Z",
-      "sha256": "abc123def456...",
+      "blake3": "BnCcPamGtUD6jG34vVrQgkDNjfhBG1uZeMdJh75tgWk8",
       "size": 2048,
       "aspect": {
         "schemaVersion": 1,
@@ -362,7 +262,7 @@ GET /api/v1/aspects/alaric
     },
     "0.9.0": {
       "published": "2026-01-15T10:00:00Z",
-      "sha256": "def456ghi789...",
+      "blake3": "7DQrvGR3TQh5hN45vVsQgkDNjfhBG1uZeMdJh75tgWk9",
       "size": 1920,
       "deprecated": "Use 1.0.0 instead",
       "aspect": { }
@@ -383,12 +283,6 @@ GET /api/v1/aspects/alaric
   "error": "not_found",
   "message": "Aspect 'alaric' not found"
 }
-```
-
-**CLI Usage:**
-
-```bash
-aspects info alaric          # Show all versions and stats
 ```
 
 ---
@@ -427,7 +321,7 @@ GET /api/v1/aspects/alaric/latest
     },
     "prompt": "## You are Alaric the Wizard\n\nYou are a mysterious..."
   },
-  "sha256": "abc123def456...",
+  "blake3": "BnCcPamGtUD6jG34vVrQgkDNjfhBG1uZeMdJh75tgWk8",
   "size": 2048,
   "publishedAt": "2026-01-20T14:30:00Z"
 }
@@ -450,13 +344,6 @@ GET /api/v1/aspects/alaric/latest
 
 **Side Effects:**
 - Download count incremented (asynchronously, doesn't block response)
-
-**CLI Usage:**
-
-```bash
-aspects install alaric              # Uses version=latest
-aspects install alaric@1.0.0        # Uses specific version
-```
 
 ---
 
@@ -541,14 +428,6 @@ GET /api/v1/search?q=wizard&offset=20&limit=10
   "error": "validation_error",
   "message": "Invalid query parameters: limit must be between 1 and 100"
 }
-```
-
-**CLI Usage:**
-
-```bash
-aspects search wizard                        # Search by keyword
-aspects search wizard --category roleplay    # Filter by category
-aspects search --category gaming --trust verified
 ```
 
 ---
@@ -670,13 +549,6 @@ Content-Type: application/json
 **Rate Limiting:**
 - 10 publishes per hour per user
 
-**CLI Usage:**
-
-```bash
-aspects publish                   # Read local aspect.json, publish
-aspects publish --dry-run         # Validate without publishing
-```
-
 ---
 
 ### Endpoint: DELETE /aspects/:name/:version
@@ -717,6 +589,49 @@ Authorization: Bearer <access_token>
 
 ```bash
 aspects unpublish my-wizard@1.0.0     # Remove within 72 hours
+```
+
+---
+
+### Endpoint: GET /aspects/by-hash/:hash
+
+**Fetch Aspect by Content Hash**
+
+Retrieve an aspect by its blake3 content hash. This enables content-addressed installs via `aspects add hash:<blake3base64>`. No authentication required.
+
+**Request:**
+
+```bash
+GET /api/v1/aspects/by-hash/BnCcPamGtUD6jG34vVrQgkDNjfhBG1uZeMdJh75tgWk8
+```
+
+**Response (200 OK):**
+
+```json
+{
+  "name": "alaric",
+  "version": "1.0.0",
+  "content": { ... },
+  "blake3": "BnCcPamGtUD6jG34vVrQgkDNjfhBG1uZeMdJh75tgWk8",
+  "size": 2048,
+  "publishedAt": "2026-01-20T14:30:00Z"
+}
+```
+
+**Error Responses:**
+
+```json
+{
+  "ok": false,
+  "error": "not_found",
+  "message": "No aspect found for hash 'BnCcPam...'"
+}
+```
+
+**CLI Usage:**
+
+```bash
+aspects add hash:BnCcPamGtUD6jG34vVrQgkDNjfhBG1uZeMdJh75tgWk8
 ```
 
 ---
@@ -831,24 +746,38 @@ GET /api/v1/categories
 
 **Cache:**
 - TTL: 24 hours
+- Header: `Cache-Control: public, max-age=86400`
 
 ---
 
 ## Authentication Flow
 
+### Authentication Options by Client Type
+
+The Registry API supports multiple authentication methods depending on your client type:
+
+| Client Type | Auth Method | Use Case |
+|-------------|-------------|----------|
+| Web Frontend | Session cookies | Browser-based dashboards, user sessions |
+| CLI Tool | Device Authorization (PKCE) | Command-line tools, headless environments |
+| Mobile App | Bearer tokens (OAuth) | Native mobile apps, third-party integrations |
+| Third-party Integration | API keys or Bearer tokens | Server-to-server communication |
+
+This guide focuses on **Device Authorization** since it's most common for CLI clients and is self-contained. Web clients typically use standard OAuth session flows managed by the web framework.
+
 ### Device Authorization (PKCE)
 
-The CLI uses OAuth Device Authorization flow with PKCE for secure authentication without opening browser windows or exposing secrets.
+The Device Authorization flow with PKCE provides secure authentication for CLI clients without opening browser windows or requiring secret management on the client.
 
 **Flow Diagram:**
 
 ```
 ┌──────────┐                    ┌──────────────────┐                ┌─────────────────┐
-│ CLI      │                    │ Registry API     │                │ Identikey       │
-│ (user)   │                    │ (getaspects.com) │                │ (auth server)   │
+│ Client   │                    │ Registry API     │                │ Identikey       │
+│ (CLI)    │                    │ (getaspects.com) │                │ (auth server)   │
 └─────┬────┘                    └────────┬─────────┘                └────────┬────────┘
       │                                  │                                    │
-      │ 1. aspects login                 │                                    │
+      │ 1. Initiate login                │                                    │
       │─────────────────────────────────▶│                                    │
       │                                  │                                    │
       │                                  │ 2. POST /api/v1/auth/device       │
@@ -860,7 +789,7 @@ The CLI uses OAuth Device Authorization flow with PKCE for secure authentication
       │     verifier, expires_in=900,     │                                    │
       │     interval=5                    │                                    │
       │                                  │                                    │
-      │ 5. Open browser to verification_uri
+      │ 5. Direct user to verification_uri
       │    (User enters user_code at that URL)
       │
       │    https://auth.identikey.io/device?user_code=ABC123
@@ -876,7 +805,7 @@ The CLI uses OAuth Device Authorization flow with PKCE for secure authentication
       │                                  │                                    │
       │ ◀────── Response: pending ──────│                                    │
       │                                  │                                    │
-      │ 9. Wait 5 seconds (interval),    │                                    │
+      │ 9. Wait interval seconds,        │                                    │
       │    then poll again               │                                    │
       │────────────────────────────────▶│                                    │
       │                                  │                                    │
@@ -888,8 +817,8 @@ The CLI uses OAuth Device Authorization flow with PKCE for secure authentication
       │                                  │                                    │
       │ ◀─── Response: access_token ────│                                    │
       │                                  │                                    │
-      │ 12. Store in ~/.aspects/config.json
-      │ 13. ✓ Logged in as @username
+      │ 12. Store token securely
+      │ 13. ✓ Authenticated as @username
 ```
 
 ### Step-by-Step Implementation
@@ -921,16 +850,23 @@ POST /api/v1/auth/device
 - `expires_in` — Time until code expires (seconds)
 - `interval` — Minimum seconds between polls
 
-#### Step 2: Display Instructions & Open Browser
+#### Step 2: Direct User to Verification URL
 
-```bash
-$ aspects login
-Opening browser to https://auth.identikey.io/device?user_code=ABC-123-DEF
-Enter code: ABC-123-DEF
+Display the verification URL and user code to the user. For CLI clients, this typically means:
+
+1. Print the verification URL to the console
+2. Optionally, attempt to open the URL automatically if supported
+3. Display the user code prominently (they'll need to enter it at the URL)
+
+**Example output:**
+```
+Please visit this URL and enter the code:
+https://auth.identikey.io/device?user_code=ABC-123-DEF
+
 Waiting for authorization...
 ```
 
-The user visits the URL and enters the user code. The browser will ask for authentication if needed.
+The user visits the URL and enters the user code. If using a browser, they may need to authenticate if not already logged in.
 
 #### Step 3: Poll Until Authorized
 
@@ -996,10 +932,11 @@ POST /api/v1/auth/device/poll
 ```
 → Store tokens
 
-#### Step 4: Store Tokens Locally
+#### Step 4: Store Tokens
 
-Save in `~/.aspects/config.json`:
+Store the tokens securely for future use. Where and how you store them is client-specific:
 
+**CLI Example** (in `~/.aspects/config.json`):
 ```json
 {
   "version": 1,
@@ -1012,6 +949,14 @@ Save in `~/.aspects/config.json`:
   }
 }
 ```
+
+**Web Client** (in browser session storage or cookies):
+- Server typically manages session state
+- No explicit token storage needed on client
+
+**Mobile App** (in secure local storage):
+- Store in platform-specific secure storage (Keychain on iOS, Keystore on Android)
+- Include token refresh logic
 
 #### Step 5: Use Token in Requests
 
@@ -1034,290 +979,141 @@ For MVP, can skip refresh and require users to login again.
 
 ### Logout
 
-Clear stored tokens:
+Clear stored tokens when user logs out. Implementation is client-specific:
 
-```bash
-rm ~/.aspects/config.json
-```
-
-Or selective logout:
-
-```json
-{
-  "version": 1,
-  "registryUrl": "https://api.getaspects.com/v1"
-}
-```
+**CLI:** Remove or clear the auth section from config file
+**Web:** Clear session cookies
+**Mobile:** Remove token from secure storage
 
 ---
 
-## Core Commands
+## Core Operations
 
-### aspects install
+Every client needs to implement the following core operations:
 
-**Install an aspect from the registry**
+### 1. Fetch an Aspect
 
-```bash
-aspects install alaric               # Install latest version
-aspects install alaric@1.0.0         # Install specific version
-aspects install alaric@latest        # Explicit latest
-```
+Retrieve a specific aspect version from the registry.
 
-**Behavior:**
+**Operation:**
+- Call `GET /api/v1/aspects/:name/:version` or `GET /api/v1/aspects/:name/latest`
+- Parse the returned aspect.json content
+- Store or use the aspect data (implementation varies by client)
 
-1. Validate aspect name/version format
-2. Check if already installed locally
-3. Fetch aspect metadata from registry
-4. Download aspect.json to `~/.aspects/aspects/alaric@1.0.0/`
-5. Verify SHA256 hash (optional, for security)
-6. Display success message with download count
+**Common use cases:**
+- CLI: Download and store locally
+- Web: Display details in browser
+- Mobile: Cache locally, inject into app
+- Third-party: Send to external service
 
-**Error Handling:**
-
-- Aspect not found → "Aspect 'typo' not found. Did you mean 'alaric'?"
-- Version not found → "Version 1.5.0 of 'alaric' not found. Latest is 1.0.0"
-- Network error → "Failed to fetch aspect. Check your connection and try again"
-- Already installed → "alaric@1.0.0 already installed. Use --force to overwrite"
-
-**Output Example:**
-
-```
-$ aspects install alaric
-Fetching alaric@latest...
-✓ Downloaded alaric@1.0.0 (2.0 KB)
-✓ Installed to ~/.aspects/aspects/alaric@1.0.0/
-  Published: 2026-01-20T14:30:00Z
-  Downloads: 1547
-```
+**Error handling:**
+- 404 → Aspect or version not found
+- Network error → Retry with backoff
 
 ---
 
-### aspects search
+### 2. Search the Registry
 
-**Search the registry**
+Find aspects using keywords, categories, and filters.
 
-```bash
-aspects search wizard                              # By keyword
-aspects search wizard --category roleplay          # Filter by category
-aspects search --category gaming --trust verified  # Multiple filters
-aspects search --limit 50                          # Change page size
-aspects search wizard --offset 20                  # Pagination
-```
+**Operation:**
+- Call `GET /api/v1/search?q=...&category=...&limit=...&offset=...`
+- Parse paginated results
+- Display or process results
 
-**Query Parameters:**
+**Common filters:**
+- `q` — Search term
+- `category` — Aspect category
+- `trust` — Trust level (verified, community)
+- `limit` / `offset` — Pagination
 
-- `q` — Search term (name, displayName, tagline)
-- `--category` — Filter by category
-- `--trust` — Filter by trust level (verified, community)
-- `--limit` — Max results (default 20, max 100)
-- `--offset` — Pagination offset (default 0)
-
-**Output Example:**
-
-```
-$ aspects search wizard
-Found 5 aspects:
-
-  alaric@1.0.0          Quirky wizard, D&D expert        [verified] 1.5k ↓
-  gandalf@0.2.0         Wise wandering wizard            [community] 342 ↓
-  merlin@1.1.0          Classic wizard archetype         [verified] 287 ↓
-```
+**Error handling:**
+- 400 → Invalid parameters
+- Network error → Show cached results or error message
 
 ---
 
-### aspects publish
+### 3. Publish an Aspect
 
-**Publish a new aspect or version**
+Publish a new aspect or new version to the registry.
 
-Reads `aspect.json` from current directory and publishes it to the registry.
+**Operation:**
+1. Load aspect.json from local source
+2. Validate schema, size, and naming rules
+3. Obtain authentication token
+4. POST to `/api/v1/aspects` with Authorization header
+5. Handle response (success or error)
 
-```bash
-aspects publish                  # Publish from ./aspect.json
-aspects publish --dry-run        # Validate without publishing
-```
+**Validation checklist:**
+- All required fields present
+- Schema conforms to spec
+- File size < 50KB
+- Publisher field matches authenticated user
+- Version uses valid semver
+- Name uses only allowed characters
+- Category is in official list
 
-**Prerequisites:**
-
-- `aspect.json` in current directory with valid schema
-- Logged in (`aspects login`)
-- Publisher field matches authenticated username
-- Version not already published
-
-**Process:**
-
-1. Read and parse `aspect.json`
-2. Validate schema locally (all fields, types, sizes)
-3. Check if publisher field matches logged-in user
-4. Compute SHA256 hash and file size
-5. Verify version doesn't already exist
-6. POST to `/api/v1/aspects` with auth token
-7. Handle response (success or error)
-
-**Error Handling:**
-
-```bash
-$ aspects publish
-Error: Not logged in. Run 'aspects login' first.
-
-$ aspects publish
-Error: aspect.json not found in current directory
-
-$ aspects publish
-Error: Invalid aspect.json: category must be one of [assistant, roleplay, ...]
-
-$ aspects publish
-Error: Version 1.0.0 already published. Bump version number.
-
-$ aspects publish
-Error: Publisher 'other-user' doesn't match your account. Update aspect.json.
-
-$ aspects publish
-Error: Aspect size 52000 bytes exceeds 50KB limit.
-```
-
-**Output Example:**
-
-```
-$ aspects publish
-Validating aspect.json...
-✓ Schema valid
-✓ Size OK (2.1 KB / 50 KB)
-✓ Publisher matches username
-
-Publishing my-wizard@1.0.0 to registry...
-✓ Published!
-
-View at: https://getaspects.com/aspects/my-wizard
-```
-
-**--dry-run Flag:**
-
-Validates without publishing:
-
-```
-$ aspects publish --dry-run
-Validating aspect.json...
-✓ Schema valid
-✓ Size OK (2.1 KB / 50 KB)
-✓ Publisher matches username
-✓ Would publish successfully
-
-(No changes made)
-```
+**Error handling:**
+- 400 → Schema/validation error (show specific field errors)
+- 401 → Not authenticated (direct to login)
+- 409 → Conflict (version exists or name taken)
+- 429 → Rate limited (retry later)
 
 ---
 
-### aspects login
+### 4. Authenticate
 
-**Authenticate via device authorization flow**
+Obtain authentication credentials for publishing and other protected operations.
 
-Initiates OAuth device flow for CLI authentication.
+**Operation** (Device Authorization flow):
+1. POST to `/api/v1/auth/device` to request device code
+2. Display verification URL and user code to user
+3. Poll `/api/v1/auth/device/poll` until authorized
+4. Store returned access token
+5. Use Bearer token in subsequent requests
 
-```bash
-aspects login
-```
+**Variations by client type:**
+- CLI: Device flow as described above
+- Web: Use standard OAuth session flow
+- Mobile: Device flow or native OAuth integration
+- Third-party: API key or bearer token exchange
 
-**Process:**
-
-1. Request device code from API
-2. Display verification URL and user code
-3. Offer to open browser automatically
-4. Poll API until user authorizes
-5. Store access token locally
-6. Display success with username
-
-**Output Example:**
-
-```
-$ aspects login
-Requesting authorization...
-
-Please visit this URL and enter the code:
-https://auth.identikey.io/device?user_code=ABC-123-DEF
-
-Waiting for authorization...
-(Press Ctrl+C to cancel)
-
-✓ Authorized as @username
-Access token stored in ~/.aspects/config.json
-```
+**Token usage:**
+- Include in `Authorization: Bearer <token>` header for authenticated requests
+- Refresh when expired (optional, can require re-login)
+- Clear on logout
 
 ---
 
-### aspects logout
+### 5. Get Statistics
 
-**Clear stored authentication tokens**
+Retrieve registry-wide statistics.
 
-```bash
-aspects logout
-```
+**Operation:**
+- Call `GET /api/v1/stats`
+- Parse response for total aspects, downloads, popular packages
+- Display or use in dashboards
 
-**Output:**
-
-```
-$ aspects logout
-✓ Logged out
-Auth tokens removed from ~/.aspects/config.json
-```
+**Use cases:**
+- Web dashboard: Show registry health
+- CLI: Display discovery stats
+- Analytics: Track usage patterns
 
 ---
 
-### aspects list
+### 6. Browse Categories
 
-**List all installed aspects**
+List available aspect categories.
 
-Shows locally installed aspects with versions.
+**Operation:**
+- Call `GET /api/v1/categories`
+- Cache locally (24-hour TTL)
+- Use in search filters or category selection
 
-```bash
-aspects list
-```
-
-**Output Example:**
-
-```
-$ aspects list
-Installed aspects:
-
-  alaric@1.0.0     Alaric the Wizard              roleplay
-  alaric@0.9.0     Alaric the Wizard (old)        roleplay
-  helper@2.1.0     Helper Assistant               assistant
-  default@1.0.0    Default Aspect                 assistant
-
-Total: 4 aspects installed
-```
-
----
-
-### aspects info
-
-**Show detailed information about an aspect**
-
-Displays metadata and version history for a published aspect.
-
-```bash
-aspects info alaric
-```
-
-**Output Example:**
-
-```
-$ aspects info alaric
-  Name: alaric
-  Publisher: morphist
-  Category: roleplay
-  Trust: verified
-
-Latest: 1.0.0
-Published: 2026-01-20T14:30:00Z
-
-Stats:
-  Total downloads: 1,547
-  Weekly downloads: 234
-
-Versions:
-  1.0.0  2026-01-20T14:30:00Z  Quirky wizard, D&D expert
-  0.9.0  2026-01-15T10:00:00Z  Previous version (deprecated)
-```
+**Use cases:**
+- Web: Category dropdown menus
+- CLI: Suggest categories during publish
+- Mobile: Category browsing UI
 
 ---
 
@@ -1345,56 +1141,42 @@ The CLI needs an HTTP client that supports:
 | Rust     | `reqwest`, `ureq`      | Async or blocking                     |
 | TypeScript | `axios`, `fetch`     | Node or Bun runtime                   |
 
-### File I/O Patterns
+### Local State Management
 
-**Create directories:**
+Most clients need to store some local state (tokens, cache, etc.). Where and what you store is client-specific:
 
-```
-~/.aspects/
-~/.aspects/cache/
-~/.aspects/aspects/[name]@[version]/
-```
+**CLI clients** might store:
+- Authentication tokens
+- Cached registry data
+- User preferences/config
 
-**Write JSON files:**
+**Web clients** typically store:
+- Session cookies (server-managed)
+- Client-side cache (optional)
+- User preferences (localStorage)
 
-```javascript
-const config = {
-  version: 1,
-  registryUrl: "https://api.getaspects.com/v1",
-  auth: { ... }
-};
+**Mobile apps** typically store:
+- Auth tokens (in secure storage)
+- Downloaded aspects
+- User preferences
 
-fs.writeFileSync(
-  path.join(os.homedir(), '.aspects', 'config.json'),
-  JSON.stringify(config, null, 2)
-);
-```
-
-**Read JSON files with fallback:**
+**Example: CLI local config storage**
 
 ```javascript
+function saveConfig(config) {
+  const configPath = path.join(os.homedir(), '.aspects', 'config.json');
+  fs.writeFileSync(
+    configPath,
+    JSON.stringify(config, null, 2)
+  );
+}
+
 function loadConfig() {
   const configPath = path.join(os.homedir(), '.aspects', 'config.json');
   if (!fs.existsSync(configPath)) {
     return null;
   }
-  const content = fs.readFileSync(configPath, 'utf-8');
-  return JSON.parse(content);
-}
-```
-
-**Check file/directory existence:**
-
-```javascript
-const installedPath = path.join(
-  os.homedir(),
-  '.aspects',
-  'aspects',
-  `${name}@${version}`
-);
-
-if (fs.existsSync(installedPath)) {
-  // Already installed
+  return JSON.parse(fs.readFileSync(configPath, 'utf-8'));
 }
 ```
 
@@ -1487,11 +1269,11 @@ function validateAspect(aspect) {
 
 ## Example Request/Response Flows
 
-### Flow 1: Install Aspect
+### Flow 1: Fetch an Aspect
 
-**Scenario:** User runs `aspects install alaric@1.0.0`
+**Scenario:** Client needs to retrieve a specific aspect version
 
-**Step 1: Fetch specific version**
+**Step 1: Call the API**
 
 ```bash
 curl -X GET "https://api.getaspects.com/v1/aspects/alaric/1.0.0" \
@@ -1516,38 +1298,43 @@ curl -X GET "https://api.getaspects.com/v1/aspects/alaric/1.0.0" \
     "voiceHints": { "speed": "slow", "emotions": ["curiosity"] },
     "prompt": "## You are Alaric the Wizard\n..."
   },
-  "sha256": "abc123def456...",
+  "blake3": "BnCcPamGtUD6jG34vVrQgkDNjfhBG1uZeMdJh75tgWk8",
   "size": 2048,
   "publishedAt": "2026-01-20T14:30:00Z"
 }
 ```
 
-**Step 2: Store locally**
+**Step 2: Handle the response**
 
-```bash
-mkdir -p ~/.aspects/aspects/alaric@1.0.0
-cat > ~/.aspects/aspects/alaric@1.0.0/aspect.json << 'EOF'
-{
-  "schemaVersion": 1,
-  "name": "alaric",
-  ...
-}
-EOF
-```
+The API returns the complete aspect content. The client now processes it based on its type:
 
-**Step 3: Display success**
+- **CLI:** Save to local directory
+- **Web:** Display in browser
+- **Mobile:** Store in app-specific location
+- **Third-party:** Send to external service
 
-```
-✓ Installed alaric@1.0.0
-  Size: 2.0 KB
-  Downloads: 1547
+**Example: CLI storage**
+```javascript
+// Save to ~/.aspects/aspects/alaric@1.0.0/aspect.json
+const config = loadConfig();
+const aspectPath = path.join(
+  os.homedir(),
+  '.aspects',
+  'aspects',
+  `${name}@${version}`
+);
+fs.mkdirSync(aspectPath, { recursive: true });
+fs.writeFileSync(
+  path.join(aspectPath, 'aspect.json'),
+  JSON.stringify(aspectData, null, 2)
+);
 ```
 
 ---
 
-### Flow 2: Search and Install
+### Flow 2: Search and Fetch
 
-**Scenario:** User runs `aspects search wizard`, sees results, installs one
+**Scenario:** Client searches for aspects and displays results
 
 **Step 1: Search**
 
@@ -1586,8 +1373,11 @@ curl -X GET "https://api.getaspects.com/v1/search?q=wizard&limit=10" \
 }
 ```
 
-**Display results:**
+**Step 2: Process and display results**
 
+Parse the results and display them to the user (format depends on client type):
+
+**CLI output:**
 ```
 Found 2 aspects:
 
@@ -1595,45 +1385,43 @@ Found 2 aspects:
   gandalf@0.2.0       Wise wandering wizard          [community] 342 ↓
 ```
 
-**Step 2: User selects alaric, install as above**
+**Web:** Display in list, grid, or card layout
+**Mobile:** Show in scrollable list with filters
+
+Once user selects an aspect, fetch it using Flow 1 (Fetch an Aspect)
 
 ---
 
 ### Flow 3: Publish Aspect
 
-**Scenario:** User runs `aspects publish` with local aspect.json
+**Scenario:** Client publishes a new aspect or version
 
-**Step 1: Load and validate local aspect.json**
+**Step 1: Load and validate aspect data**
 
-```bash
-cat > ./aspect.json << 'EOF'
-{
-  "schemaVersion": 1,
-  "name": "my-wizard",
-  "publisher": "myusername",
-  "version": "1.0.0",
-  "displayName": "My Wizard",
-  "tagline": "A custom wizard aspect",
-  "category": "roleplay",
-  "tags": ["wizard", "magic"],
-  "prompt": "## You are my wizard..."
+Load aspect.json from your source (local file, form input, etc.) and validate it against the schema before sending to the API.
+
+```javascript
+// Validate aspect.json
+const schema = buildAspectSchema(); // Define based on spec
+const validation = schema.safeParse(aspectData);
+if (!validation.success) {
+  // Show validation errors
+  console.error('Invalid aspect:', validation.error.issues);
+  return;
 }
-EOF
 ```
 
-**Step 2: User runs publish**
+**Step 2: Obtain authentication**
 
-```bash
-aspects publish
-```
+Ensure the user is authenticated (device flow or session-based):
 
-**CLI validates:**
-
-```
-Validating ./aspect.json...
-✓ Schema valid
-✓ Size OK (1.8 KB / 50 KB)
-✓ Publisher matches logged-in user
+```javascript
+const token = getStoredToken(); // Retrieve from storage
+if (!token) {
+  // Redirect to auth flow
+  initiateDeviceFlow();
+  return;
+}
 ```
 
 **Step 3: POST to API with auth**
@@ -1664,19 +1452,27 @@ curl -X POST "https://api.getaspects.com/v1/aspects" \
 }
 ```
 
-**Display success:**
+**Step 4: Handle response**
 
-```
-✓ Published my-wizard@1.0.0
+Check the response status and handle success or error:
 
-View at: https://getaspects.com/aspects/my-wizard
+```javascript
+if (response.ok) {
+  const result = await response.json();
+  console.log(`✓ Published ${result.name}@${result.version}`);
+  console.log(`View at: ${result.url}`);
+} else {
+  const error = await response.json();
+  // Show user-friendly error message
+  console.error(`Error: ${error.message}`);
+}
 ```
 
 ---
 
-### Flow 4: Device Authorization Login
+### Flow 4: Device Authorization Authentication
 
-**Scenario:** User runs `aspects login`
+**Scenario:** Client needs to authenticate user via device flow
 
 **Step 1: Request device code**
 
@@ -1700,17 +1496,18 @@ curl -X POST "https://api.getaspects.com/v1/auth/device" \
 }
 ```
 
-**Display instructions:**
+**Step 2: Display instructions to user**
+
+Show the verification URL and user code. For CLI, this means printing to console. For web, you might show in a modal. For mobile, direct to system browser.
 
 ```
 Please visit this URL and enter the code:
 https://auth.identikey.io/device?user_code=ABC-123-DEF
 
 Waiting for authorization...
-(Press Ctrl+C to cancel)
 ```
 
-**Step 2: Poll every 5 seconds**
+**Step 3: Poll until authorized**
 
 ```bash
 curl -X POST "https://api.getaspects.com/v1/auth/device/poll" \
@@ -1744,27 +1541,23 @@ curl -X POST "https://api.getaspects.com/v1/auth/device/poll" \
 }
 ```
 
-**Step 3: Store tokens**
+**Step 4: Store tokens**
 
-```json
-{
-  "version": 1,
-  "registryUrl": "https://api.getaspects.com/v1",
-  "auth": {
-    "accessToken": "eyJhbGc...",
-    "refreshToken": "eyJhbGc...",
-    "expiresAt": "2026-02-26T12:00:00Z",
-    "username": "myusername"
-  }
-}
+Once you receive the access token, store it securely:
+
+```javascript
+const tokens = {
+  accessToken: response.access_token,
+  refreshToken: response.refresh_token,
+  expiresAt: new Date(Date.now() + response.expires_in * 1000),
+  username: response.username
+};
+saveTokens(tokens); // Implementation-specific storage
 ```
 
-**Display success:**
+**Step 5: Confirm to user**
 
-```
-✓ Authorized as @myusername
-Access token stored in ~/.aspects/config.json
-```
+Display success message and indicate they can now use authenticated operations.
 
 ---
 
@@ -1876,26 +1669,27 @@ async function fetchWithRetry(url, options, maxRetries = 3) {
 
 ### Pre-Publishing Checklist
 
-Before `aspects publish`, verify:
+Before attempting to publish, validate:
 
-- [ ] Logged in: `aspects login` completed
-- [ ] `aspect.json` exists in current directory
-- [ ] Name is unique (not taken)
-- [ ] Version is valid semver and new
-- [ ] Publisher field matches username
+- [ ] User is authenticated with valid token
+- [ ] Aspect data loaded from source (file, form, etc.)
 - [ ] All required fields present and valid
-- [ ] File size under 50KB
+- [ ] Schema passes validation
+- [ ] Name follows naming rules (lowercase, alphanumeric + hyphens)
+- [ ] Version is valid semver (X.Y.Z format)
+- [ ] Publisher field matches authenticated user
 - [ ] Category is in official list
-- [ ] No obvious issues in prompt
+- [ ] File size under 50KB
+- [ ] No formatting or encoding issues
 
 ### Publish Process
 
-**1. Load aspect.json**
+**1. Load aspect data**
+
+Load aspect data from your source (file, form, API, etc.):
 
 ```javascript
-const aspectPath = path.join(process.cwd(), 'aspect.json');
-const aspectContent = fs.readFileSync(aspectPath, 'utf-8');
-const aspect = JSON.parse(aspectContent);
+const aspect = loadAspectData(); // Implementation-specific
 ```
 
 **2. Validate schema**
@@ -1903,27 +1697,24 @@ const aspect = JSON.parse(aspectContent);
 ```javascript
 const validation = aspectSchema.safeParse(aspect);
 if (!validation.success) {
-  console.error('Invalid aspect.json:');
-  validation.error.issues.forEach(issue => {
-    console.error(`  ${issue.path.join('.')}: ${issue.message}`);
-  });
-  process.exit(1);
+  showErrors('Invalid aspect:', validation.error.issues);
+  return;
 }
 ```
 
 **3. Check authentication**
 
 ```javascript
-const config = loadConfig();
-if (!config?.auth?.accessToken) {
-  console.error('Not logged in. Run "aspects login" first');
-  process.exit(1);
+const token = getStoredToken();
+if (!token) {
+  redirectToAuth();
+  return;
 }
 
 // Verify publisher matches
-if (aspect.publisher !== config.auth.username) {
-  console.error(`Publisher mismatch: aspect.json has "${aspect.publisher}" but you are "@${config.auth.username}"`);
-  process.exit(1);
+if (aspect.publisher !== getUsername()) {
+  showError('Publisher field does not match your account');
+  return;
 }
 ```
 
@@ -1932,18 +1723,18 @@ if (aspect.publisher !== config.auth.username) {
 ```javascript
 const size = Buffer.byteLength(JSON.stringify(aspect));
 if (size > 51200) {
-  console.error(`Aspect too large: ${size} bytes (50KB limit)`);
-  process.exit(1);
+  showError(`Aspect too large: ${size} bytes (50KB limit)`);
+  return;
 }
 ```
 
 **5. POST to API**
 
 ```javascript
-const response = await fetch(`${config.registryUrl}/aspects`, {
+const response = await fetch(`${registryUrl}/aspects`, {
   method: 'POST',
   headers: {
-    'Authorization': `Bearer ${config.auth.accessToken}`,
+    'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json'
   },
   body: JSON.stringify({ aspect })
@@ -1952,148 +1743,150 @@ const response = await fetch(`${config.registryUrl}/aspects`, {
 const result = await response.json();
 
 if (!response.ok) {
-  console.error(`Error: ${result.error}`);
-  console.error(`Message: ${result.message}`);
-
-  // Provide helpful hints
-  if (result.error === 'version_exists') {
-    console.error('\nTip: Bump the version in aspect.json and try again');
-  }
-  if (result.error === 'name_taken') {
-    console.error('\nTip: Choose a different name in aspect.json');
-  }
-
-  process.exit(1);
+  handlePublishError(result.error, result.message);
+  return;
 }
 
-console.log(`✓ Published ${result.name}@${result.version}`);
-console.log(`View at: ${result.url}`);
+showSuccess(`Published ${result.name}@${result.version}`);
 ```
 
 ### Handling Publish Errors
 
-**version_exists:**
-```
-Error: Version 1.0.0 already exists
+**version_exists (409):**
+- Message: "Version X.Y.Z already published"
+- Action: User must increment version number and try again
+- Example: Change "1.0.0" to "1.0.1"
 
-Fix: Bump the version in aspect.json
-  Current:  "version": "1.0.0"
-  Try:      "version": "1.0.1"
-```
+**name_taken (409):**
+- Message: "Aspect name is owned by another publisher"
+- Action: User must choose a unique name
+- Example: Change "my-aspect" to "my-aspect-v2"
 
-**name_taken:**
-```
-Error: Aspect name 'alaric' is already owned by another publisher
+**invalid_aspect (400):**
+- Message: Lists specific validation errors
+- Action: Fix indicated fields (category, size, naming, etc.)
+- Example: Category must be one of [assistant, roleplay, ...]
 
-Fix: Choose a unique name in aspect.json
-  Current:  "name": "alaric"
-  Try:      "name": "alaric-custom"
-```
+**unauthorized (401):**
+- Message: "Missing or invalid authentication token"
+- Action: User must authenticate via device flow
+- Example: Redirect to login/authentication flow
 
-**invalid_aspect:**
-```
-Error: Invalid aspect.json
+**forbidden (403):**
+- Message: "Publisher field does not match your account"
+- Action: User must either:
+  - Update publisher field to match their account
+  - Or use a different account
+- Example: Your account is @alice, but aspect.json has publisher: "bob"
 
-Details:
-  category: Invalid enum value. Expected one of:
-    assistant, roleplay, creative, productivity,
-    education, gaming, spiritual, pundit
-
-Fix: Update category in aspect.json
-```
-
-**unauthorized:**
-```
-Error: Not authenticated
-
-Fix: Run 'aspects login' to authenticate
-```
+**rate_limited (429):**
+- Message: "Too many publish requests"
+- Action: User should wait before trying again (limit: 10/hour)
+- Retry-After header may be included
 
 ---
 
-## Testing Checklist
+## Client Integration Tests
 
-### Installation Tests
+### Core Operation Tests
 
-- [ ] Install latest version: `aspects install default`
-- [ ] Install specific version: `aspects install default@1.0.0`
-- [ ] Install with version alias: `aspects install default@latest`
-- [ ] Handle not found: `aspects install nonexistent` → error
-- [ ] Handle version not found: `aspects install default@9.9.9` → error
-- [ ] Verify file stored in correct location
-- [ ] Verify aspect.json content matches API response
+**Fetch Aspect Tests:**
+- [ ] Fetch latest version: GET /aspects/:name/latest
+- [ ] Fetch specific version: GET /aspects/:name/1.0.0
+- [ ] Handle not found (404): Non-existent aspect
+- [ ] Handle not found (404): Non-existent version
+- [ ] Verify full aspect.json content in response
 - [ ] Handle network timeout gracefully
-- [ ] Retry on transient failure (429, 503)
+- [ ] Retry on transient failures (429, 503)
+- [ ] Verify Blake3 hash if validation implemented
 
-### Search Tests
-
-- [ ] Search by keyword: `aspects search wizard`
-- [ ] Search with no results: `aspects search xyzabc123`
-- [ ] Filter by category: `aspects search --category roleplay`
-- [ ] Filter by trust: `aspects search --trust verified`
-- [ ] Pagination: `aspects search --offset 20 --limit 10`
-- [ ] Combined filters: `aspects search assistant --category productivity --trust verified`
-- [ ] Handle invalid category gracefully
+**Search Tests:**
+- [ ] Search by keyword: GET /search?q=wizard
+- [ ] Search with no results
+- [ ] Filter by category: GET /search?category=roleplay
+- [ ] Filter by trust: GET /search?trust=verified
+- [ ] Pagination: offset and limit parameters
+- [ ] Combined filters (q + category + trust)
+- [ ] Handle invalid parameters (400)
 - [ ] Handle network errors
+- [ ] Verify result sorting/ordering
 
-### Publishing Tests
+**Publish Tests:**
+- [ ] Valid publish: POST /aspects with valid aspect
+- [ ] Verify response includes name, version, URL
+- [ ] Handle duplicate version (409)
+- [ ] Handle invalid schema (400): Missing required fields
+- [ ] Handle invalid schema (400): Bad field values
+- [ ] Handle oversized aspect (400): > 50KB
+- [ ] Handle name conflict (409): Different publisher owns name
+- [ ] Handle missing auth (401)
+- [ ] Handle publisher mismatch (403)
+- [ ] Handle rate limiting (429)
 
-- [ ] Valid publish: Create aspect.json, run `aspects publish`
-- [ ] Verify response contains correct name, version, URL
-- [ ] Handle duplicate version: Try same version twice → error
-- [ ] Handle invalid schema: Missing required fields → error with field names
-- [ ] Handle oversized aspect: > 50KB → error with size
-- [ ] Handle name conflict: Different publisher owns name → error
-- [ ] Handle missing auth: Not logged in → error with helpful message
-- [ ] Handle publisher mismatch: Token is @user1, aspect.json is @user2 → error
-- [ ] --dry-run flag: Validate without publishing
-- [ ] Create proper directory structure
+**Authentication Tests:**
+- [ ] Device flow: POST /auth/device returns device code
+- [ ] Device flow: Display user code and verification URL
+- [ ] Device flow: Poll /auth/device/poll successfully
+- [ ] Device flow: Handle pending status (continue polling)
+- [ ] Device flow: Handle slow_down status (adjust interval)
+- [ ] Device flow: Handle expired device code
+- [ ] Device flow: Handle user denial
+- [ ] Device flow: Store tokens securely
+- [ ] Device flow: Use token in Authorization header
+- [ ] Device flow: Handle invalid/expired token (401)
+- [ ] Logout: Clear stored tokens
 
-### Authentication Tests
+**Statistics & Browse Tests:**
+- [ ] GET /stats returns aggregate data
+- [ ] GET /categories returns full category list
+- [ ] Verify cache headers are respected
+- [ ] Handle network errors gracefully
 
-- [ ] Login flow initiates device code request
-- [ ] Display user code and verification URL
-- [ ] Poll successfully when user authorizes
-- [ ] Handle pending status (continue polling)
-- [ ] Handle expired device code
-- [ ] Handle user denial
-- [ ] Store tokens in config.json
-- [ ] Logout clears tokens
-- [ ] Use stored token in authenticated requests
-- [ ] Handle invalid/expired token (401)
+### Platform-Specific Tests
 
-### Local Storage Tests
+**CLI Clients:**
+- [ ] Command-line argument parsing
+- [ ] Configuration file read/write
+- [ ] Local state directory creation and cleanup
+- [ ] Error messages are user-friendly
+- [ ] Exit codes follow standard conventions
 
-- [ ] Create ~/.aspects directory on first run
-- [ ] Create cache/registry.json
-- [ ] Create cache/registry.json with valid structure
-- [ ] Store aspects in aspects/ directory with correct naming
-- [ ] Handle concurrent installs (race conditions)
-- [ ] Verify file permissions (readable)
-- [ ] Handle disk full gracefully
-- [ ] Clean up on failures (partial downloads)
+**Web Clients:**
+- [ ] Session cookie handling
+- [ ] CSRF protection
+- [ ] Responsive design (mobile, tablet, desktop)
+- [ ] Keyboard navigation and accessibility
+- [ ] Progressive enhancement (graceful degradation)
+
+**Mobile Clients:**
+- [ ] Secure token storage
+- [ ] Background sync/refresh
+- [ ] Offline mode (cache local data)
+- [ ] Deep linking support
+- [ ] Platform-specific UI patterns
 
 ### Error Handling Tests
 
-- [ ] 404 Not Found → "Aspect not found"
-- [ ] 400 Bad Request → Show validation errors
-- [ ] 401 Unauthorized → "Not logged in"
-- [ ] 403 Forbidden → "Permission denied"
-- [ ] 409 Conflict → "Version exists" or "Name taken"
-- [ ] 429 Rate Limited → "Rate limited, try again"
-- [ ] 500+ Server Error → "Registry unavailable"
-- [ ] Network timeout → "Connection timeout"
-- [ ] DNS failure → "Cannot reach registry"
-- [ ] Invalid JSON → "Invalid response from server"
+- [ ] 400 Bad Request → Show validation errors with field names
+- [ ] 401 Unauthorized → Redirect to authentication
+- [ ] 403 Forbidden → Show permission denied message
+- [ ] 404 Not Found → Show "not found" with suggestions
+- [ ] 409 Conflict → Show specific conflict reason
+- [ ] 429 Rate Limited → Show retry guidance
+- [ ] 500+ Server Error → Show "registry unavailable"
+- [ ] Network timeout → Show connection error
+- [ ] DNS failure → Show "cannot reach registry"
+- [ ] Invalid JSON response → Show "invalid response from server"
+- [ ] Connection reset → Retry with backoff
 
-### Integration Tests
+### Integration Scenarios
 
-- [ ] Install aspect, then search for it
-- [ ] Publish aspect, then install it
-- [ ] Login, publish, logout
-- [ ] Multiple installs of different aspects
-- [ ] Update config between operations
+- [ ] Search → Fetch → Use aspect (end-to-end)
+- [ ] Authenticate → Publish → Verify in search
+- [ ] Multiple rapid requests (verify no race conditions)
 - [ ] Cache invalidation after publish
+- [ ] Token refresh when expired
+- [ ] Graceful degradation on network failure
 
 ---
 
@@ -2187,12 +1980,25 @@ Complete JSON Schema for aspect.json validation:
 
 ## Summary
 
-This guide provides everything needed to implement a CLI client for the aspects registry API. Key takeaways:
+This guide provides everything needed to implement ANY client (CLI, web, mobile, or third-party) for the aspects registry API. Key takeaways:
 
-1. **API is complete** — All 10 endpoints are fully specified with examples
-2. **Authentication is standardized** — Device authorization with PKCE is secure and CLI-friendly
-3. **Local storage is simple** — Just JSON files in ~/.aspects/
+1. **API is complete** — All endpoints are fully specified with examples
+2. **Authentication is flexible** — Device flow for CLI, sessions for web, bearer tokens for third-party
+3. **Core operations are universal** — Fetch, search, publish, authenticate, browse
 4. **Error handling is predictable** — Consistent error codes and messages
-5. **Testing is comprehensive** — Checklist covers all major flows
+5. **Implementation is client-specific** — Same API, different client implementations
 
-For questions or clarifications, refer to the `REGISTRY-API.md` and `ARCHITECTURE.md` documentation files.
+### Quick Implementation Checklist
+
+- [ ] Implement HTTP client for API requests
+- [ ] Implement schema validation for aspect.json
+- [ ] Implement authentication flow (device or session-based)
+- [ ] Implement secure token storage
+- [ ] Implement core operations (fetch, search, publish, auth)
+- [ ] Implement comprehensive error handling
+- [ ] Implement caching strategy (if applicable)
+- [ ] Test against all error scenarios
+- [ ] Test end-to-end workflows
+- [ ] Deploy and monitor
+
+For questions or additional context, refer to the `REGISTRY-API.md` documentation which contains the full API specification.

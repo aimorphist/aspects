@@ -1,7 +1,7 @@
 # Aspects CLI v1 Implementation Plan
 
 > CLI tool for installing and managing AI agent personality aspects.
-> `npx aspects install alaric` → morphist.ai personality ready to use.
+> `npx aspects add alaric` → morphist.ai personality ready to use.
 
 ## Overview
 
@@ -17,110 +17,145 @@
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
-| Package format | `aspect.yaml` (pure YAML) | Structured data, trivial parsing, mobile-friendly |
+| Package format | `aspect.json` (JSON, Zod-validated) | Structured data, native to JS/TS tooling, validated at parse time |
 | Naming | `pkg-name` or `@publisher/pkg-name` | npm-style, simple by default, scoped when needed |
 | CLI name | `aspects` | Clean, memorable, `npx aspects` |
 | Storage | `~/.aspects/` | App-agnostic, system-level |
-| Registry MVP | Static JSON + tarballs in this repo | Minimal effort, upgrade to API later |
+| Registry | REST API at `getaspects.com/api/v1` with static GitHub fallback | API-first for search/publish; fallback for resilience |
 | Versioning | Semver, lock to specific version | KISS — no complex resolution |
-| Schema version | `schemaVersion: 1` in yaml | Future-proofing without complexity |
-| Trust/signatures | Base58 ed25519 sig of blake3 hash | Identikey-compatible, in registry metadata |
+| Schema version | `schemaVersion: 1` in JSON | Future-proofing without complexity |
+| Auth | OAuth2 device flow | No password storage, browser-based, mobile-friendly |
+| Validation | Zod schemas with field limits | Runtime validation, clear error messages, 50KB max prompt |
+| Categories | 9 official categories | Curated taxonomy: assistant, roleplay, creative, productivity, education, gaming, spiritual, pundit, guide |
 
 ---
 
-## Package Format: `aspect.yaml`
+## Package Format: `aspect.json`
 
-```yaml
-schemaVersion: 1
-name: alaric                          # required, unique identifier
-publisher: morphist                   # optional, for scoped: @morphist/alaric
-version: 1.0.0                        # required, semver
-displayName: Alaric the Wizard        # required, human-readable
-tagline: Quirky wizard, D&D expert    # required, one-liner for UI
-icon: wizard                          # optional, icon name or URL
-author: Duke Jones                    # optional
-license: MIT                          # optional
+```json
+{
+  "schemaVersion": 1,
+  "name": "alaric",
+  "publisher": "morphist",
+  "version": "1.0.0",
+  "displayName": "Alaric the Wizard",
+  "tagline": "Quirky wizard, D&D expert",
+  "category": "roleplay",
+  "tags": ["wizard", "dnd", "fantasy"],
+  "icon": "wizard",
+  "author": "Duke Jones",
+  "license": "MIT",
 
-voiceHints:                           # optional
-  speed: normal                       # slow | normal | fast
-  emotions: [mystical, playful]       # provider-specific tags
-  styleHints: Speak in riddles        # freeform guidance
+  "voiceHints": {
+    "speed": "normal",
+    "emotions": ["mystical", "playful"],
+    "styleHints": "Speak in riddles"
+  },
 
-modes:                                # optional
-  campaign:
-    description: Epic storytelling mode
-    autoNarration: true
+  "modes": {
+    "campaign": {
+      "description": "Epic storytelling mode",
+      "autoNarration": true
+    }
+  },
 
-resources:                            # optional, for future bundling
-  voice:
-    recommended:
-      provider: cartesia
-      voiceId: 87748186-23bb-4158-a1eb-332911b0b708
-  model:
-    recommended:
-      provider: openai
-      modelId: gpt-4.1-mini
-  skills:
-    - morphist/dnd-rules@^1
+  "resources": {
+    "voice": {
+      "recommended": {
+        "provider": "cartesia",
+        "voiceId": "87748186-23bb-4158-a1eb-332911b0b708"
+      }
+    },
+    "model": {
+      "recommended": {
+        "provider": "openai",
+        "modelId": "gpt-4.1-mini"
+      }
+    },
+    "skills": ["morphist/dnd-rules@^1"]
+  },
 
-prompt: |
-  ## Aspect: Alaric the Wizard
-  **YOU ARE Alaric the Wizard.** Speak as this character at all times.
-  
-  **Tagline**: "Quirky wizard, D&D expert"
-  
-  ### Identity
-  - **Welcome**: "Ah, a seeker of wisdom approaches!"
-  - **"Who are you?"**: Introduce as Alaric, ancient wizard
-  
-  ### CRITICAL: No Narration
-  **NEVER use italic action descriptions like *does something*.**
-  
-  ### Character
-  - Speaks in riddles and arcane references
-  - Delights in wordplay
-  - References obscure magical lore
-  
-  ### Rules
-  - **Brief by default**: Keep responses short unless asked
-  - **Narration**: OFF by default, user can toggle
+  "directives": [
+    {
+      "id": "no-narration",
+      "rule": "NEVER use italic action descriptions like *does something*.",
+      "priority": "critical"
+    }
+  ],
+
+  "instructions": [
+    {
+      "id": "brief-default",
+      "rule": "Keep responses short unless asked for more detail."
+    }
+  ],
+
+  "prompt": "## Aspect: Alaric the Wizard\n**YOU ARE Alaric the Wizard.** Speak as this character at all times.\n..."
+}
 ```
+
+### Field Limits
+
+| Field | Limit |
+|-------|-------|
+| `name` | slug format |
+| `displayName` | 100 chars |
+| `tagline` | 200 chars |
+| `publisher` | 50 chars |
+| `prompt` | 50KB |
+| `tags` | 10 max |
+| `directives` | 25 max |
+| `instructions` | 25 max |
 
 ---
 
 ## Directory Structure
 
-### This Repo (CLI + Registry)
+### This Repo (CLI + Static Fallback Registry)
 
 ```
 aspects/
 ├── src/
 │   ├── cli.ts              # main entry point
 │   ├── commands/
-│   │   ├── install.ts
-│   │   ├── list.ts
-│   │   ├── search.ts
-│   │   ├── info.ts
-│   │   ├── remove.ts
-│   │   └── update.ts
+│   │   ├── add.ts          # install from registry/github/local
+│   │   ├── create.ts       # interactive aspect creation wizard
+│   │   ├── list.ts         # show installed aspects
+│   │   ├── search.ts       # search registry
+│   │   ├── info.ts         # show aspect details
+│   │   ├── remove.ts       # uninstall
+│   │   ├── update.ts       # update installed
+│   │   ├── publish.ts      # publish to registry (auth required)
+│   │   ├── login.ts        # device auth flow
+│   │   ├── logout.ts       # clear auth tokens
+│   │   ├── edit.ts         # edit aspect metadata
+│   │   ├── validate.ts     # validate aspect.json schema
+│   │   ├── compile.ts      # build/compile aspects
+│   │   ├── bundle.ts       # bundle aspects
+│   │   ├── set.ts          # manage aspect sets
+│   │   └── find.ts         # find aspects
 │   ├── lib/
+│   │   ├── api-client.ts   # REST API client (getaspects.com)
 │   │   ├── config.ts       # ~/.aspects/config.json management
 │   │   ├── installer.ts    # download, validate, store
-│   │   ├── parser.ts       # YAML parsing + validation
-│   │   ├── registry.ts     # fetch from registry
+│   │   ├── parser.ts       # JSON parsing + validation
+│   │   ├── registry.ts     # registry with API + static fallback
 │   │   ├── resolver.ts     # parse install specs
+│   │   ├── schema.ts       # Zod validation schemas
 │   │   └── types.ts        # TypeScript interfaces
 │   └── utils/
 │       ├── paths.ts        # ~/.aspects/ helpers
-│       ├── hash.ts         # blake3 hashing
 │       └── logger.ts       # pretty console output
-├── registry/
-│   ├── index.json          # registry manifest
+├── registry/               # static fallback registry
+│   ├── index.json
 │   └── aspects/
 │       ├── default/
-│       │   └── aspect.yaml
+│       │   └── aspect.json
 │       └── alaric/
-│           └── aspect.yaml
+│           └── aspect.json
+├── tests/
+│   ├── unit/               # unit tests (mocked)
+│   └── integration/        # live API tests
 ├── docs/
 │   └── plans/
 │       └── v1-implementation.md
@@ -133,43 +168,47 @@ aspects/
 
 ```
 ~/.aspects/
-├── config.json             # installed aspects, settings
+├── config.json             # installed aspects, settings, auth tokens
 └── aspects/
     ├── alaric/
-    │   └── aspect.yaml
+    │   └── aspect.json
     └── @morphist/
         └── wizard/
-            └── aspect.yaml
+            └── aspect.json
 ```
 
 ---
 
 ## CLI Commands
 
-### `aspects install <spec>`
+### `aspects add <spec>` (alias: `get`)
 
 ```bash
 # From registry (default)
-aspects install alaric
-aspects install alaric@1.0.0
-aspects install @morphist/alaric
+aspects add alaric
+aspects add alaric@1.0.0
+aspects add @morphist/alaric
 
 # From GitHub
-aspects install github:user/repo
-aspects install github:user/repo@v1.0.0
+aspects add github:user/repo
+aspects add github:user/repo@v1.0.0
 
 # From local
-aspects install ./my-aspect
-aspects install /path/to/aspect.yaml
+aspects add ./my-aspect
+aspects add /path/to/aspect.json
 ```
 
 **Behavior**:
 1. Resolve spec → source + version
-2. Fetch aspect.yaml (+ assets)
-3. Validate schema
+2. Fetch aspect.json
+3. Validate schema (Zod)
 4. Store to `~/.aspects/aspects/<name>/`
 5. Update `~/.aspects/config.json`
 6. Print success + aspect info
+
+### `aspects create` (alias: `new`, `init`)
+
+Interactive wizard for creating new aspects. Prompts for name, display name, tagline, category, and generates a valid `aspect.json` scaffold.
 
 ### `aspects list`
 
@@ -188,6 +227,8 @@ Registry aspects matching "wizard":
   alaric@1.0.0          Quirky wizard, D&D expert       [verified]
   gandalf@0.2.0         Wise wandering wizard           [community]
 ```
+
+Supports filters: `--category`, `--trust`, `--limit`, `--offset`
 
 ### `aspects info <name>`
 
@@ -210,6 +251,14 @@ alaric@1.0.0
     campaign - Epic storytelling mode
 ```
 
+### `aspects publish`
+
+Publishes an aspect to the registry. Requires `aspects login` first. Validates schema and enforces 50KB size limit.
+
+### `aspects login` / `aspects logout`
+
+Device authorization flow: opens browser, user enters code, CLI polls for token. Tokens stored in `~/.aspects/config.json`.
+
 ### `aspects remove <name>`
 
 ```bash
@@ -230,134 +279,45 @@ Checking all installed aspects...
   @morphist/default: up to date
 ```
 
----
+### `aspects validate [path]`
 
-## Registry Format
+Validates an `aspect.json` file against the Zod schema without installing.
 
-### `registry/index.json`
+### `aspects edit`, `aspects compile`, `aspects bundle`, `aspects set`, `aspects find`
 
-```json
-{
-  "version": 1,
-  "updated": "2026-01-17T12:00:00Z",
-  "aspects": {
-    "alaric": {
-      "latest": "1.0.0",
-      "versions": {
-        "1.0.0": {
-          "published": "2026-01-15T10:00:00Z",
-          "sha256": "abc123...",
-          "size": 2048,
-          "url": "https://raw.githubusercontent.com/morphist/aspects/main/registry/aspects/alaric/aspect.yaml"
-        }
-      },
-      "metadata": {
-        "displayName": "Alaric the Wizard",
-        "tagline": "Quirky wizard, D&D expert",
-        "publisher": "morphist",
-        "trust": "verified",
-        "signature": "base58-encoded-ed25519-sig..."
-      }
-    },
-    "default": {
-      "latest": "1.0.0",
-      "versions": {
-        "1.0.0": {
-          "published": "2026-01-15T10:00:00Z",
-          "sha256": "def456...",
-          "size": 1024,
-          "url": "..."
-        }
-      },
-      "metadata": {
-        "displayName": "Morphist Default",
-        "tagline": "Helpful voice AI assistant",
-        "publisher": "morphist",
-        "trust": "verified"
-      }
-    }
-  }
-}
-```
+Additional management commands for editing metadata, building aspects, bundling, managing aspect sets, and finding aspects.
 
 ---
 
-## TypeScript Interfaces
+## Registry Architecture
 
-```typescript
-// Aspect package (parsed from aspect.yaml)
-interface Aspect {
-  schemaVersion: number;
-  name: string;
-  publisher?: string;
-  version: string;
-  displayName: string;
-  tagline: string;
-  icon?: string;
-  author?: string;
-  license?: string;
-  
-  voiceHints?: {
-    speed?: 'slow' | 'normal' | 'fast';
-    emotions?: string[];
-    styleHints?: string;
-  };
-  
-  modes?: Record<string, {
-    description: string;
-    autoNarration?: boolean;
-  }>;
-  
-  resources?: {
-    voice?: {
-      recommended?: {
-        provider: string;
-        voiceId: string;
-      };
-    };
-    model?: {
-      recommended?: {
-        provider: string;
-        modelId: string;
-      };
-    };
-    skills?: string[];
-  };
-  
-  prompt: string;
-}
+### REST API (Primary)
 
-// Registry entry (for search/list without full prompt)
-interface AspectSummary {
-  name: string;
-  version: string;
-  displayName: string;
-  tagline: string;
-  publisher?: string;
-  trust: 'verified' | 'community' | 'local';
-  signature?: string;
-}
+Base URL: `https://getaspects.com/api/v1`
 
-// Local config (~/.aspects/config.json)
-interface AspectsConfig {
-  version: 1;
-  installed: Record<string, {
-    version: string;
-    source: 'registry' | 'github' | 'local';
-    installedAt: string;
-    sha256: string;
-  }>;
-  settings?: {
-    registryUrl?: string;
-  };
-}
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/registry` | GET | Full registry index (cached 5 min) |
+| `/aspects/:name` | GET | Aspect metadata with all versions |
+| `/aspects/:name/:version` | GET | Specific version content (`latest` supported) |
+| `/search?q=&category=&trust=&limit=&offset=` | GET | Full-text search with filters |
+| `/aspects` | POST | Publish aspect (auth required) |
+| `/auth/device` | POST | Initiate device authorization |
+| `/auth/device/poll` | POST | Poll for authorization result |
+| `/stats` | GET | Aggregate statistics |
+| `/categories` | GET | Official categories list |
 
-// Install spec parsing
-type InstallSpec = 
-  | { type: 'registry'; name: string; version?: string }
-  | { type: 'github'; owner: string; repo: string; ref?: string }
-  | { type: 'local'; path: string };
-```
+### Static Fallback
+
+When the API is unavailable, the CLI falls back to the static GitHub-hosted registry at:
+`https://raw.githubusercontent.com/aimorphist/aspects/main/registry/index.json`
+
+### Error Handling
+
+- 3 retries with exponential backoff for 5xx and 429 errors
+- No retry on 4xx (except 429)
+- 30-second timeout per request
+- Structured error responses: `{ error: string, message: string }`
 
 ---
 
@@ -367,7 +327,7 @@ type InstallSpec =
 **Goal**: `npx aspects` runs and shows help
 
 - [x] Set up package.json with bin entry
-- [x] Install deps: `citty`, `consola`, `yaml`, `ofetch`
+- [x] Install deps: `citty`, `consola`, `ofetch`
 - [x] Create CLI entry point with command routing
 - [x] Implement `--help` and `--version`
 
@@ -380,30 +340,32 @@ type InstallSpec =
 - [x] Wire up `list` command to show installed aspects
 
 ### Phase 3: Parser + Validation ✅
-**Goal**: Can parse and validate aspect.yaml
+**Goal**: Can parse and validate aspect.json
 
-- [x] Define Zod schema for aspect.yaml (src/lib/schema.ts)
-- [x] Implement parser.ts with YAML parsing
-- [x] Add validation with clear error messages
+- [x] Define Zod schema for aspect.json (src/lib/schema.ts)
+- [x] Implement parser.ts with JSON parsing (YAML legacy support)
+- [x] Add validation with clear error messages and field limits
 - [x] Create sample aspects for testing (registry/aspects/)
 
 ### Phase 4: Install Command ✅
-**Goal**: `aspects install alaric` works
+**Goal**: `aspects add alaric` works
 
 - [x] Implement resolver.ts (parse install specs)
-- [x] Implement registry.ts (fetch index.json, aspect files)
+- [x] Implement registry.ts (fetch from registry)
 - [x] Implement installer.ts (download, validate, store)
-- [x] Wire up install command
-- [x] Add sha256 verification
+- [x] Wire up add command
+- [x] Add blake3 verification
 
-### Phase 5: Other Commands ✅
+### Phase 5: Core Commands ✅
 **Goal**: Full CLI functionality
 
 - [x] `aspects list` — show installed
 - [x] `aspects info <name>` — show details
 - [x] `aspects remove <name>` — uninstall
-- [x] `aspects search [query]` — search registry
+- [x] `aspects search [query]` — search registry with filters
 - [x] `aspects update [name]` — update installed
+- [x] `aspects validate` — schema validation
+- [x] `aspects create` — interactive wizard
 
 ### Phase 6: Registry Bootstrap ✅
 **Goal**: Publish initial aspects
@@ -411,31 +373,61 @@ type InstallSpec =
 - [x] Create registry/index.json
 - [x] Add `default` aspect
 - [x] Add `alaric` aspect
-- [x] Host via GitHub raw URLs initially
+- [x] Host via GitHub raw URLs as static fallback
 
 ### Phase 7: GitHub Source Support ✅
-**Goal**: `aspects install github:user/repo`
+**Goal**: `aspects add github:user/repo`
 
 - [x] Parse github: specs
 - [x] Fetch from GitHub releases or raw
 - [x] Handle @ref for specific versions/commits
 
-### Phase 8: Trust & Signatures
-**Goal**: Verify aspect integrity
+### Phase 8: REST API Registry ✅
+**Goal**: Real API backend for registry
 
-- [ ] Implement blake3 hashing
-- [ ] Add signature field to registry metadata
-- [ ] Verify signatures on install (optional)
-- [ ] Display trust level in info/list
+- [x] REST API at `getaspects.com/api/v1`
+- [x] API client with retry logic and caching (src/lib/api-client.ts)
+- [x] Search endpoint with full-text query, category, trust filters
+- [x] Version content endpoint with `latest` alias
+- [x] Stats and categories endpoints
+- [x] Fallback to static GitHub registry when API unavailable
 
-### Phase 9: Polish ✅
+### Phase 9: Auth & Publishing ✅
+**Goal**: Community can publish aspects
+
+- [x] Device authorization flow (OAuth2-style)
+- [x] `aspects login` / `aspects logout` commands
+- [x] Token storage in config.json with expiry checking
+- [x] `aspects publish` with validation and 50KB size limit
+- [x] Publisher field enforcement (must match authenticated user)
+
+### Phase 10: Polish ✅
 **Goal**: Production-ready
 
 - [x] Pretty output with colors/spinners (picocolors)
 - [x] Helpful error messages
-- [ ] Shell completions (deferred)
 - [x] README with examples
 - [x] Publish to npm (ready to publish)
+- [x] Unit and integration test suites
+
+### Phase 11: Trust & Content Addressing ✅
+**Goal**: Verify aspect integrity and enable content-addressed sharing
+
+- [x] Implement blake3 hashing (hash-wasm, base64 output)
+- [x] Migrate all hash fields from SHA-256 to Blake3
+- [x] Add hash-based install (`aspects add hash:<blake3>`)
+- [x] Add `share` command (outputs blake3 hash + install command)
+- [x] Add `unpublish` command (DELETE /aspects/:name/:version)
+- [x] Add API client methods: `getAspectByHash`, `unpublishAspect`
+- [ ] Add signature field to registry metadata
+- [ ] Verify signatures on install (optional)
+- [ ] Display trust level in info/list
+
+### Deferred
+
+- [ ] Shell completions
+- [ ] Aspect inheritance / extending other aspects
+- [ ] Prompt variants (e.g., per language)
 
 ---
 
@@ -444,31 +436,36 @@ type InstallSpec =
 ```json
 {
   "dependencies": {
+    "@clack/prompts": "^0.11.0",
     "citty": "^0.1.6",
     "consola": "^3.2.3",
     "ofetch": "^1.3.4",
-    "yaml": "^2.4.0"
+    "picocolors": "^1.1.1",
+    "zod": "^4.3.5"
   },
   "devDependencies": {
     "@types/bun": "latest",
+    "@types/node": "^22",
     "typescript": "^5"
   }
 }
 ```
 
 **Why these**:
+- `@clack/prompts` — beautiful interactive CLI prompts (create wizard)
 - `citty` — unjs CLI framework, cleaner than commander
 - `consola` — pretty logging with levels
 - `ofetch` — modern fetch wrapper with retries
-- `yaml` — YAML parsing
+- `picocolors` — terminal colors (tiny, fast)
+- `zod` — runtime schema validation with clear errors
 
 ---
 
-## Open Questions (Deferred)
+## Open Questions
 
-1. **API Registry**: When to upgrade from static JSON to real API?
-2. **Publishing**: How do community members publish aspects?
-3. **Mobile sync**: How does mobile app discover/download aspects?
+1. ~~**API Registry**: When to upgrade from static JSON to real API?~~ → **Done.** REST API at `getaspects.com/api/v1` with static fallback.
+2. ~~**Publishing**: How do community members publish aspects?~~ → **Done.** Device auth + `aspects publish`. Needs refinement: moderation, namespacing, rate limits.
+3. **Mobile sync**: How does mobile app discover/download aspects? API is ready; need client integration.
 4. **Bundled defaults**: Ship some aspects with Morphist app?
 5. **Aspect inheritance**: Can aspects extend other aspects?
 6. **Prompt variants**: Multiple prompts per aspect (e.g., per language)?
@@ -477,8 +474,11 @@ type InstallSpec =
 
 ## Success Criteria
 
-- [x] `npx aspects install alaric` works on fresh machine
+- [x] `npx aspects add alaric` works on fresh machine
 - [x] Installed aspect readable from any app via `~/.aspects/`
 - [x] Clear error messages for invalid aspects
-- [ ] Registry discoverable via `aspects search`
+- [x] Registry discoverable via `aspects search`
+- [x] Auth flow for publishing
+- [x] Unit and integration tests passing
 - [ ] Trust levels displayed for transparency
+- [ ] Mobile app integration

@@ -80,7 +80,7 @@ export interface InstalledAspect {
   version: string;
   source: 'registry' | 'github' | 'local';
   installedAt: string;
-  sha256: string;
+  blake3: string;
   path?: string;      // For local installs - absolute path to aspect dir
   githubRef?: string; // For github installs: tag/branch/commit used
 }
@@ -91,7 +91,8 @@ export interface InstalledAspect {
 export type InstallSpec =
   | { type: 'registry'; name: string; version?: string }
   | { type: 'github'; owner: string; repo: string; ref?: string }
-  | { type: 'local'; path: string };
+  | { type: 'local'; path: string }
+  | { type: 'hash'; hash: string };
 
 /** Registry index.json structure */
 export interface RegistryIndex {
@@ -129,7 +130,7 @@ export interface RegistryAspect {
 export interface RegistryVersion {
   published: string;
   url: string;
-  sha256?: string;
+  blake3?: string;
   size?: number;
 }
 
@@ -170,7 +171,7 @@ export interface ApiAspectDetail {
   };
   versions: Record<string, {
     published: string;
-    sha256: string;
+    blake3: string;
     size: number;
     deprecated?: string;
     aspect: Aspect;
@@ -181,7 +182,7 @@ export interface ApiVersionContent {
   name: string;
   version: string;
   content: Aspect;
-  sha256: string;
+  blake3: string;
   size: number;
   publishedAt: string;
 }
@@ -191,6 +192,11 @@ export interface ApiPublishResponse {
   name: string;
   version: string;
   url: string;
+}
+
+export interface ApiUnpublishResponse {
+  ok: true;
+  message: string;
 }
 
 export interface ApiDeviceCode {

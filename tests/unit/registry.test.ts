@@ -64,7 +64,7 @@ describe('registry', () => {
       versions: {
         '1.0.0': {
           published: '2026-01-01',
-          sha256: 'abc',
+          blake3: 'abc',
           size: 100,
           aspect: {
             name,

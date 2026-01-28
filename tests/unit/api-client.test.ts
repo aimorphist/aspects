@@ -27,8 +27,10 @@ const {
   getRegistry,
   getAspect,
   getAspectVersion,
+  getAspectByHash,
   searchAspects,
   publishAspect,
+  unpublishAspect,
   getStats,
   getCategories,
   clearApiCache,
@@ -94,7 +96,7 @@ describe('api-client', () => {
 
   describe('getAspectVersion', () => {
     test('fetches specific version', async () => {
-      const fakeVersion = { name: 'alaric', version: '1.0.0', content: {}, sha256: 'abc', size: 100 };
+      const fakeVersion = { name: 'alaric', version: '1.0.0', content: {}, blake3: 'abc', size: 100 };
       ofetchImpl = async () => fakeVersion;
 
       const result = await getAspectVersion('alaric', '1.0.0');
@@ -182,6 +184,29 @@ describe('api-client', () => {
       await getCategories();
       await getCategories();
       expect(ofetchCalls).toHaveLength(1);
+    });
+  });
+
+  describe('getAspectByHash', () => {
+    test('fetches aspect by blake3 hash', async () => {
+      const fakeVersion = { name: 'alaric', version: '1.0.0', content: {}, blake3: 'abc123' };
+      ofetchImpl = async () => fakeVersion;
+
+      const result = await getAspectByHash('abc123base64hash');
+      expect(result.name).toBe('alaric');
+      expect(ofetchCalls[0]!.url).toContain('/aspects/by-hash/');
+    });
+  });
+
+  describe('unpublishAspect', () => {
+    test('requires auth (throws when not logged in)', async () => {
+      try {
+        await unpublishAspect('test', '1.0.0');
+        expect.unreachable('Should have thrown');
+      } catch (err) {
+        expect(err).toBeInstanceOf(ApiClientError);
+        expect((err as InstanceType<typeof ApiClientError>).statusCode).toBe(401);
+      }
     });
   });
 

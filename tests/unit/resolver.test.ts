@@ -53,4 +53,17 @@ describe('parseInstallSpec', () => {
   test('throws on empty github spec', () => {
     expect(() => parseInstallSpec('github:')).toThrow();
   });
+
+  test('parses hash spec', () => {
+    const result = parseInstallSpec('hash:SHjKBCXHOfpCf37aIP6EX2suRrpf4qFN9bHjL1BgMhU=');
+    expect(result).toEqual({ type: 'hash', hash: 'SHjKBCXHOfpCf37aIP6EX2suRrpf4qFN9bHjL1BgMhU=' });
+  });
+
+  test('throws on short hash spec', () => {
+    expect(() => parseInstallSpec('hash:abc')).toThrow(/at least 16 characters/);
+  });
+
+  test('throws on empty hash spec', () => {
+    expect(() => parseInstallSpec('hash:')).toThrow(/at least 16 characters/);
+  });
 });

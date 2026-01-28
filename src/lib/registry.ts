@@ -110,16 +110,23 @@ export function clearRegistryCache(): void {
   api.clearApiCache();
 }
 
+/**
+ * Fetch aspect version content by blake3 hash.
+ */
+export async function fetchAspectByHash(hash: string): Promise<ApiVersionContent> {
+  return api.getAspectByHash(hash);
+}
+
 // --- Internal helpers ---
 
 function apiDetailToRegistryAspect(detail: ApiAspectDetail): RegistryAspect {
-  const versions: Record<string, { published: string; url: string; sha256?: string; size?: number }> = {};
+  const versions: Record<string, { published: string; url: string; blake3?: string; size?: number }> = {};
 
   for (const [ver, info] of Object.entries(detail.versions)) {
     versions[ver] = {
       published: info.published,
       url: '', // API-based installs don't use URLs
-      sha256: info.sha256,
+      blake3: info.blake3,
       size: info.size,
     };
   }

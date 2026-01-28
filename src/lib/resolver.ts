@@ -8,11 +8,21 @@ import type { InstallSpec } from './types';
  *   "alaric"           → { type: 'registry', name: 'alaric' }
  *   "alaric@1.0.0"     → { type: 'registry', name: 'alaric', version: '1.0.0' }
  *   "@scope/name"      → { type: 'registry', name: '@scope/name' }
+ *   "hash:<blake3>"    → { type: 'hash', hash: '<blake3>' }
  *   "github:user/repo" → { type: 'github', owner: 'user', repo: 'repo' }
  *   "./path"           → { type: 'local', path: '/abs/path' }
  *   "/abs/path"        → { type: 'local', path: '/abs/path' }
  */
 export function parseInstallSpec(spec: string): InstallSpec {
+  // Hash-based (content-addressed)
+  if (spec.startsWith('hash:')) {
+    const hash = spec.slice(5);
+    if (hash.length < 16) {
+      throw new Error(`Invalid hash spec: ${spec}. Hash must be at least 16 characters.`);
+    }
+    return { type: 'hash', hash };
+  }
+
   // GitHub source
   if (spec.startsWith('github:')) {
     const rest = spec.slice(7);

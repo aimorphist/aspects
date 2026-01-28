@@ -3,10 +3,10 @@ import { join, dirname } from 'node:path';
 import { ofetch } from 'ofetch';
 import type { InstallSpec, Aspect } from './types';
 import { parseAspectJson, parseAspectFile } from './parser';
-import { getRegistryAspect, fetchAspectVersion } from './registry';
+import { getRegistryAspect, fetchAspectVersion, fetchAspectByHash } from './registry';
 import { addInstalledAspect, getInstalledAspect } from './config';
 import { getAspectPath, ensureAspectsDir } from '../utils/paths';
-import { sha256 } from '../utils/hash';
+import { blake3Hash } from '../utils/hash';
 import { log } from '../utils/logger';
 
 const ASPECT_FILENAME = 'aspect.json';
@@ -38,6 +38,8 @@ export async function installAspect(
       return installFromLocal(spec.path, options);
     case 'github':
       return installFromGitHub(spec.owner, spec.repo, spec.ref, options);
+    case 'hash':
+      return installFromHash(spec.hash, options);
   }
 }
 
@@ -110,12 +112,12 @@ async function installFromRegistryApi(
   await writeFile(join(aspectDir, ASPECT_FILENAME), content);
 
   // Update config
-  const hash = versionData.sha256 || sha256(content);
+  const hash = versionData.blake3 || await blake3Hash(content);
   await addInstalledAspect(name, {
     version: aspect.version,
     source: 'registry',
     installedAt: new Date().toISOString(),
-    sha256: hash,
+    blake3: hash,
   });
 
   return { success: true, aspect, source: 'registry' };
@@ -203,12 +205,12 @@ async function installFromRegistryLegacy(
   await writeFile(join(aspectDir, ASPECT_FILENAME), content);
 
   // Update config
-  const hash = sha256(content);
+  const hash = await blake3Hash(content);
   await addInstalledAspect(name, {
     version: aspect.version,
     source: 'registry',
     installedAt: new Date().toISOString(),
-    sha256: hash,
+    blake3: hash,
   });
 
   return { success: true, aspect, source: 'registry' };
@@ -268,7 +270,7 @@ async function installFromGitHub(
     const existing = await getInstalledAspect(aspect.name);
     if (existing && existing.source === 'github' && existing.githubRef === targetRef) {
       const existingAspect = await loadAspectFromPath(getAspectPath(aspect.name));
-      if (existingAspect && existing.sha256 === sha256(content)) {
+      if (existingAspect && existing.blake3 === await blake3Hash(content)) {
         return { success: true, aspect: existingAspect, source: 'github', alreadyInstalled: true };
       }
     }
@@ -281,12 +283,12 @@ async function installFromGitHub(
   await writeFile(join(aspectDir, ASPECT_FILENAME), content);
 
   // Update config
-  const hash = sha256(content);
+  const hash = await blake3Hash(content);
   await addInstalledAspect(aspect.name, {
     version: aspect.version,
     source: 'github',
     installedAt: new Date().toISOString(),
-    sha256: hash,
+    blake3: hash,
     githubRef: targetRef,
   });
 
@@ -338,12 +340,12 @@ async function installFromLocal(
 
   // Read content for hash
   const content = await readFile(filePath, 'utf-8');
-  const hash = sha256(content);
+  const hash = await blake3Hash(content);
 
   // Check if already installed from same path (unless force)
   if (!options?.force) {
     const existing = await getInstalledAspect(aspect.name);
-    if (existing && existing.path === aspectDir && existing.sha256 === hash) {
+    if (existing && existing.path === aspectDir && existing.blake3 === hash) {
       return { success: true, aspect, source: 'local', alreadyInstalled: true };
     }
   }
@@ -353,11 +355,61 @@ async function installFromLocal(
     version: aspect.version,
     source: 'local',
     installedAt: new Date().toISOString(),
-    sha256: hash,
+    blake3: hash,
     path: aspectDir,
   });
 
   return { success: true, aspect, source: 'local' };
+}
+
+/**
+ * Install from a blake3 hash (content-addressed).
+ */
+async function installFromHash(
+  hash: string,
+  options?: { force?: boolean },
+): Promise<InstallResult> {
+  log.start(`Fetching aspect by hash ${hash.slice(0, 12)}...`);
+
+  let versionData;
+  try {
+    versionData = await fetchAspectByHash(hash);
+  } catch (err) {
+    const message = (err as Error).message;
+    if (message.includes('not_found') || message.includes('404') || message.includes('not found')) {
+      return { success: false, error: `No aspect found for hash "${hash}"` };
+    }
+    return { success: false, error: `Failed to fetch aspect by hash: ${message}` };
+  }
+
+  const aspect = versionData.content;
+
+  // Check if already installed (unless force)
+  if (!options?.force) {
+    const existing = await getInstalledAspect(aspect.name);
+    if (existing && existing.blake3 === hash) {
+      const existingAspect = await loadAspectFromPath(getAspectPath(aspect.name));
+      if (existingAspect) {
+        return { success: true, aspect: existingAspect, source: 'registry', alreadyInstalled: true };
+      }
+    }
+  }
+
+  // Store to ~/.aspects/aspects/<name>/
+  await ensureAspectsDir();
+  const aspectDir = getAspectPath(aspect.name);
+  await mkdir(aspectDir, { recursive: true });
+  const content = JSON.stringify(aspect, null, 2);
+  await writeFile(join(aspectDir, ASPECT_FILENAME), content);
+
+  await addInstalledAspect(aspect.name, {
+    version: aspect.version,
+    source: 'registry',
+    installedAt: new Date().toISOString(),
+    blake3: versionData.blake3 || await blake3Hash(content),
+  });
+
+  return { success: true, aspect, source: 'registry' };
 }
 
 /**

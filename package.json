@@ -55,6 +55,7 @@
     "@clack/prompts": "^0.11.0",
     "citty": "^0.1.6",
     "consola": "^3.2.3",
+    "hash-wasm": "^4.12.0",
     "ofetch": "^1.3.4",
     "picocolors": "^1.1.1",
     "zod": "^4.3.5"

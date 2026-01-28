@@ -18,6 +18,8 @@ import edit from "./commands/edit";
 import bundle from "./commands/bundle";
 import login from "./commands/login";
 import logout from "./commands/logout";
+import share from "./commands/share";
+import unpublish from "./commands/unpublish";
 
 const main = defineCommand({
   meta: {
@@ -53,6 +55,10 @@ const main = defineCommand({
     set,
     edit,
     bundle,
+
+    // Sharing
+    share,
+    unpublish,
 
     // Auth
     login,

@@ -7,6 +7,7 @@ import type {
   ApiVersionContent,
   ApiSearchResult,
   ApiPublishResponse,
+  ApiUnpublishResponse,
   ApiDeviceCode,
   ApiDevicePoll,
   ApiStats,
@@ -215,6 +216,26 @@ export async function publishAspect(aspect: Aspect): Promise<ApiPublishResponse>
     body: { aspect },
     auth: true,
   });
+}
+
+/**
+ * GET /aspects/by-hash/:hash — Fetch aspect by blake3 hash (no auth)
+ */
+export async function getAspectByHash(hash: string): Promise<ApiVersionContent> {
+  return apiFetch<ApiVersionContent>(`/aspects/by-hash/${encodeURIComponent(hash)}`);
+}
+
+/**
+ * DELETE /aspects/:name/:version — Unpublish a version (auth required)
+ */
+export async function unpublishAspect(
+  name: string,
+  version: string,
+): Promise<ApiUnpublishResponse> {
+  return apiFetch<ApiUnpublishResponse>(
+    `/aspects/${encodeURIComponent(name)}/${encodeURIComponent(version)}`,
+    { method: 'DELETE', auth: true },
+  );
 }
 
 /**
