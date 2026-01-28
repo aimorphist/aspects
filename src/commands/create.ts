@@ -105,20 +105,74 @@ export default defineCommand({
       p.log.info(`Detected aspects registry at ${repoRoot}`);
     }
 
+    // Helper to check if aspect exists at a given name
+    const aspectExistsAt = async (name: string): Promise<string | null> => {
+      let checkPath: string;
+      if (inRegistry) {
+        checkPath = join(repoRoot, REGISTRY_DIR, name, "aspect.json");
+      } else if (args.path) {
+        checkPath = join(args.path, "aspect.json");
+      } else {
+        checkPath = join(cwd, "aspect.json");
+      }
+      try {
+        await stat(checkPath);
+        return checkPath;
+      } catch {
+        return null;
+      }
+    };
+
+    // Get the aspect name with conflict resolution
+    let aspectName: string | undefined;
+
+    while (!aspectName) {
+      const nameInput = await p.text({
+        message: "Aspect name (slug)",
+        placeholder: "my-wizard",
+        validate: (value) => {
+          if (!value) return "Name is required";
+          if (!/^[a-z0-9-]+$/.test(value)) {
+            return "Name must be lowercase letters, numbers, and hyphens only";
+          }
+        },
+      });
+
+      if (p.isCancel(nameInput)) {
+        p.cancel("Cancelled");
+        process.exit(0);
+      }
+
+      const existingPath = await aspectExistsAt(nameInput as string);
+
+      if (existingPath) {
+        p.log.warn(`An aspect already exists at ${existingPath}`);
+
+        const action = await p.select({
+          message: "What would you like to do?",
+          options: [
+            { value: "rename", label: "Choose a different name" },
+            { value: "overwrite", label: "Overwrite the existing aspect" },
+            { value: "cancel", label: "Cancel" },
+          ],
+        });
+
+        if (p.isCancel(action) || action === "cancel") {
+          p.cancel("Cancelled");
+          process.exit(0);
+        }
+
+        if (action === "overwrite") {
+          aspectName = nameInput as string;
+        }
+        // If "rename", loop continues to ask for name again
+      } else {
+        aspectName = nameInput as string;
+      }
+    }
+
     const answers = await p.group(
       {
-        name: () =>
-          p.text({
-            message: "Aspect name (slug)",
-            placeholder: "my-wizard",
-            validate: (value) => {
-              if (!value) return "Name is required";
-              if (!/^[a-z0-9-]+$/.test(value)) {
-                return "Name must be lowercase letters, numbers, and hyphens only";
-              }
-            },
-          }),
-
         displayName: () =>
           p.text({
             message: "Display name",
@@ -331,7 +385,7 @@ Keep it light! A few well-crafted rules beat many vague ones.
     // Build the aspect object
     const aspect: Record<string, unknown> = {
       schemaVersion: 1,
-      name: answers.name,
+      name: aspectName,
       publisher: answers.author || "community",
       version: "1.0.0",
       displayName: answers.displayName,
@@ -379,7 +433,7 @@ Keep it light! A few well-crafted rules beat many vague ones.
 
     if (inRegistry) {
       // Create in registry/aspects/{name}/
-      outputDir = join(repoRoot, REGISTRY_DIR, answers.name as string);
+      outputDir = join(repoRoot, REGISTRY_DIR, aspectName);
       outputPath = join(outputDir, "aspect.json");
     } else if (args.path) {
       outputDir = args.path;
@@ -387,15 +441,6 @@ Keep it light! A few well-crafted rules beat many vague ones.
     } else {
       outputDir = cwd;
       outputPath = join(cwd, "aspect.json");
-    }
-
-    // Check if aspect already exists
-    try {
-      await stat(outputPath);
-      p.log.error(`aspect.json already exists at ${outputPath}`);
-      process.exit(1);
-    } catch {
-      // Good, doesn't exist
     }
 
     // Create directory if needed
@@ -417,7 +462,7 @@ Keep it light! A few well-crafted rules beat many vague ones.
         try {
           await addToRegistryIndex(
             repoRoot,
-            answers.name as string,
+            aspectName,
             answers.displayName as string,
             answers.tagline as string,
             answers.category as string,
@@ -438,11 +483,11 @@ Keep it light! A few well-crafted rules beat many vague ones.
       if (gitCommit) {
         try {
           execSync(`git add .`, { cwd: repoRoot, stdio: "pipe" });
-          execSync(`git commit -m "Add ${answers.name} aspect"`, {
+          execSync(`git commit -m "Add ${aspectName} aspect"`, {
             cwd: repoRoot,
             stdio: "pipe",
           });
-          p.log.success(`Committed: "Add ${answers.name} aspect"`);
+          p.log.success(`Committed: "Add ${aspectName} aspect"`);
 
           const gitPush = await p.confirm({
             message: "Push to origin?",
@@ -489,8 +534,8 @@ Keep it light! A few well-crafted rules beat many vague ones.
 
       if (!p.isCancel(addToSet) && addToSet !== "__none__") {
         const set = await loadSet(addToSet as string);
-        if (set && !set.aspects.includes(answers.name)) {
-          set.aspects.push(answers.name);
+        if (set && !set.aspects.includes(aspectName)) {
+          set.aspects.push(aspectName);
           await saveSet(set);
           p.log.success(`Added to set: ${set.displayName}`);
         }
