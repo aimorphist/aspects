@@ -15,18 +15,18 @@
 
 ## Decisions Made
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| Package format | `aspect.json` (JSON, Zod-validated) | Structured data, native to JS/TS tooling, validated at parse time |
-| Naming | `pkg-name` or `@publisher/pkg-name` | npm-style, simple by default, scoped when needed |
-| CLI name | `aspects` | Clean, memorable, `npx aspects` |
-| Storage | `~/.aspects/` | App-agnostic, system-level |
-| Registry | REST API at `getaspects.com/api/v1` with static GitHub fallback | API-first for search/publish; fallback for resilience |
-| Versioning | Semver, lock to specific version | KISS — no complex resolution |
-| Schema version | `schemaVersion: 1` in JSON | Future-proofing without complexity |
-| Auth | OAuth2 device flow | No password storage, browser-based, mobile-friendly |
-| Validation | Zod schemas with field limits | Runtime validation, clear error messages, 50KB max prompt |
-| Categories | 9 official categories | Curated taxonomy: assistant, roleplay, creative, productivity, education, gaming, spiritual, pundit, guide |
+| Decision       | Choice                                                      | Rationale                                                                                                  |
+| -------------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Package format | `aspect.json` (JSON, Zod-validated)                         | Structured data, native to JS/TS tooling, validated at parse time                                          |
+| Naming         | `pkg-name` or `@publisher/pkg-name`                         | npm-style, simple by default, scoped when needed                                                           |
+| CLI name       | `aspects`                                                   | Clean, memorable, `npx aspects`                                                                            |
+| Storage        | `~/.aspects/`                                               | App-agnostic, system-level                                                                                 |
+| Registry       | REST API at `aspects.sh/api/v1` with static GitHub fallback | API-first for search/publish; fallback for resilience                                                      |
+| Versioning     | Semver, lock to specific version                            | KISS — no complex resolution                                                                               |
+| Schema version | `schemaVersion: 1` in JSON                                  | Future-proofing without complexity                                                                         |
+| Auth           | OAuth2 device flow                                          | No password storage, browser-based, mobile-friendly                                                        |
+| Validation     | Zod schemas with field limits                               | Runtime validation, clear error messages, 50KB max prompt                                                  |
+| Categories     | 9 official categories                                       | Curated taxonomy: assistant, roleplay, creative, productivity, education, gaming, spiritual, pundit, guide |
 
 ---
 
@@ -96,16 +96,16 @@
 
 ### Field Limits
 
-| Field | Limit |
-|-------|-------|
-| `name` | slug format |
-| `displayName` | 100 chars |
-| `tagline` | 200 chars |
-| `publisher` | 50 chars |
-| `prompt` | 50KB |
-| `tags` | 10 max |
-| `directives` | 25 max |
-| `instructions` | 25 max |
+| Field          | Limit       |
+| -------------- | ----------- |
+| `name`         | slug format |
+| `displayName`  | 100 chars   |
+| `tagline`      | 200 chars   |
+| `publisher`    | 50 chars    |
+| `prompt`       | 50KB        |
+| `tags`         | 10 max      |
+| `directives`   | 25 max      |
+| `instructions` | 25 max      |
 
 ---
 
@@ -135,7 +135,7 @@ aspects/
 │   │   ├── set.ts          # manage aspect sets
 │   │   └── find.ts         # find aspects
 │   ├── lib/
-│   │   ├── api-client.ts   # REST API client (getaspects.com)
+│   │   ├── api-client.ts   # REST API client (aspects.sh)
 │   │   ├── config.ts       # ~/.aspects/config.json management
 │   │   ├── installer.ts    # download, validate, store
 │   │   ├── parser.ts       # JSON parsing + validation
@@ -199,6 +199,7 @@ aspects add /path/to/aspect.json
 ```
 
 **Behavior**:
+
 1. Resolve spec → source + version
 2. Fetch aspect.json
 3. Validate schema (Zod)
@@ -293,19 +294,19 @@ Additional management commands for editing metadata, building aspects, bundling,
 
 ### REST API (Primary)
 
-Base URL: `https://getaspects.com/api/v1`
+Base URL: `https://aspects.sh/api/v1`
 
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `/registry` | GET | Full registry index (cached 5 min) |
-| `/aspects/:name` | GET | Aspect metadata with all versions |
-| `/aspects/:name/:version` | GET | Specific version content (`latest` supported) |
-| `/search?q=&category=&trust=&limit=&offset=` | GET | Full-text search with filters |
-| `/aspects` | POST | Publish aspect (auth required) |
-| `/auth/device` | POST | Initiate device authorization |
-| `/auth/device/poll` | POST | Poll for authorization result |
-| `/stats` | GET | Aggregate statistics |
-| `/categories` | GET | Official categories list |
+| Endpoint                                     | Method | Purpose                                       |
+| -------------------------------------------- | ------ | --------------------------------------------- |
+| `/registry`                                  | GET    | Full registry index (cached 5 min)            |
+| `/aspects/:name`                             | GET    | Aspect metadata with all versions             |
+| `/aspects/:name/:version`                    | GET    | Specific version content (`latest` supported) |
+| `/search?q=&category=&trust=&limit=&offset=` | GET    | Full-text search with filters                 |
+| `/aspects`                                   | POST   | Publish aspect (auth required)                |
+| `/auth/device`                               | POST   | Initiate device authorization                 |
+| `/auth/device/poll`                          | POST   | Poll for authorization result                 |
+| `/stats`                                     | GET    | Aggregate statistics                          |
+| `/categories`                                | GET    | Official categories list                      |
 
 ### Static Fallback
 
@@ -324,6 +325,7 @@ When the API is unavailable, the CLI falls back to the static GitHub-hosted regi
 ## Implementation Phases
 
 ### Phase 1: Core CLI Scaffold ✅
+
 **Goal**: `npx aspects` runs and shows help
 
 - [x] Set up package.json with bin entry
@@ -332,6 +334,7 @@ When the API is unavailable, the CLI falls back to the static GitHub-hosted regi
 - [x] Implement `--help` and `--version`
 
 ### Phase 2: Local Storage ✅
+
 **Goal**: Can read/write to `~/.aspects/`
 
 - [x] Implement paths.ts (get config dir, ensure exists)
@@ -340,6 +343,7 @@ When the API is unavailable, the CLI falls back to the static GitHub-hosted regi
 - [x] Wire up `list` command to show installed aspects
 
 ### Phase 3: Parser + Validation ✅
+
 **Goal**: Can parse and validate aspect.json
 
 - [x] Define Zod schema for aspect.json (src/lib/schema.ts)
@@ -348,6 +352,7 @@ When the API is unavailable, the CLI falls back to the static GitHub-hosted regi
 - [x] Create sample aspects for testing (registry/aspects/)
 
 ### Phase 4: Install Command ✅
+
 **Goal**: `aspects add alaric` works
 
 - [x] Implement resolver.ts (parse install specs)
@@ -357,6 +362,7 @@ When the API is unavailable, the CLI falls back to the static GitHub-hosted regi
 - [x] Add blake3 verification
 
 ### Phase 5: Core Commands ✅
+
 **Goal**: Full CLI functionality
 
 - [x] `aspects list` — show installed
@@ -368,6 +374,7 @@ When the API is unavailable, the CLI falls back to the static GitHub-hosted regi
 - [x] `aspects create` — interactive wizard
 
 ### Phase 6: Registry Bootstrap ✅
+
 **Goal**: Publish initial aspects
 
 - [x] Create registry/index.json
@@ -376,6 +383,7 @@ When the API is unavailable, the CLI falls back to the static GitHub-hosted regi
 - [x] Host via GitHub raw URLs as static fallback
 
 ### Phase 7: GitHub Source Support ✅
+
 **Goal**: `aspects add github:user/repo`
 
 - [x] Parse github: specs
@@ -383,9 +391,10 @@ When the API is unavailable, the CLI falls back to the static GitHub-hosted regi
 - [x] Handle @ref for specific versions/commits
 
 ### Phase 8: REST API Registry ✅
+
 **Goal**: Real API backend for registry
 
-- [x] REST API at `getaspects.com/api/v1`
+- [x] REST API at `aspects.sh/api/v1`
 - [x] API client with retry logic and caching (src/lib/api-client.ts)
 - [x] Search endpoint with full-text query, category, trust filters
 - [x] Version content endpoint with `latest` alias
@@ -393,6 +402,7 @@ When the API is unavailable, the CLI falls back to the static GitHub-hosted regi
 - [x] Fallback to static GitHub registry when API unavailable
 
 ### Phase 9: Auth & Publishing ✅
+
 **Goal**: Community can publish aspects
 
 - [x] Device authorization flow (OAuth2-style)
@@ -402,6 +412,7 @@ When the API is unavailable, the CLI falls back to the static GitHub-hosted regi
 - [x] Publisher field enforcement (must match authenticated user)
 
 ### Phase 10: Polish ✅
+
 **Goal**: Production-ready
 
 - [x] Pretty output with colors/spinners (picocolors)
@@ -411,6 +422,7 @@ When the API is unavailable, the CLI falls back to the static GitHub-hosted regi
 - [x] Unit and integration test suites
 
 ### Phase 11: Trust & Content Addressing ✅
+
 **Goal**: Verify aspect integrity and enable content-addressed sharing
 
 - [x] Implement blake3 hashing (hash-wasm, base64 output)
@@ -452,6 +464,7 @@ When the API is unavailable, the CLI falls back to the static GitHub-hosted regi
 ```
 
 **Why these**:
+
 - `@clack/prompts` — beautiful interactive CLI prompts (create wizard)
 - `citty` — unjs CLI framework, cleaner than commander
 - `consola` — pretty logging with levels
@@ -463,7 +476,7 @@ When the API is unavailable, the CLI falls back to the static GitHub-hosted regi
 
 ## Open Questions
 
-1. ~~**API Registry**: When to upgrade from static JSON to real API?~~ → **Done.** REST API at `getaspects.com/api/v1` with static fallback.
+1. ~~**API Registry**: When to upgrade from static JSON to real API?~~ → **Done.** REST API at `aspects.sh/api/v1` with static fallback.
 2. ~~**Publishing**: How do community members publish aspects?~~ → **Done.** Device auth + `aspects publish`. Needs refinement: moderation, namespacing, rate limits.
 3. **Mobile sync**: How does mobile app discover/download aspects? API is ready; need client integration.
 4. **Bundled defaults**: Ship some aspects with Morphist app?

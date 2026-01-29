@@ -1,8 +1,8 @@
-import { readFile, writeFile } from 'node:fs/promises';
-import { CONFIG_PATH, ensureAspectsDir } from '../utils/paths';
-import type { AspectsConfig, AuthTokens } from './types';
+import { readFile, writeFile } from "node:fs/promises";
+import { CONFIG_PATH, ensureAspectsDir } from "../utils/paths";
+import type { AspectsConfig, AuthTokens } from "./types";
 
-const DEFAULT_REGISTRY_API_URL = 'https://getaspects.com/api/v1';
+const DEFAULT_REGISTRY_API_URL = "https://aspects.sh/api/v1";
 
 /**
  * Resolve registry URL from env, config, or default.
@@ -35,10 +35,10 @@ export async function readConfig(): Promise<AspectsConfig> {
   await ensureAspectsDir();
 
   try {
-    const content = await readFile(CONFIG_PATH, 'utf-8');
+    const content = await readFile(CONFIG_PATH, "utf-8");
     return JSON.parse(content) as AspectsConfig;
   } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") {
       const config = createDefaultConfig();
       await writeConfig(config);
       return config;
@@ -52,7 +52,7 @@ export async function readConfig(): Promise<AspectsConfig> {
  */
 export async function writeConfig(config: AspectsConfig): Promise<void> {
   await ensureAspectsDir();
-  await writeFile(CONFIG_PATH, JSON.stringify(config, null, 2) + '\n');
+  await writeFile(CONFIG_PATH, JSON.stringify(config, null, 2) + "\n");
 }
 
 /**
@@ -60,7 +60,7 @@ export async function writeConfig(config: AspectsConfig): Promise<void> {
  */
 export async function addInstalledAspect(
   name: string,
-  info: AspectsConfig['installed'][string]
+  info: AspectsConfig["installed"][string],
 ): Promise<void> {
   const config = await readConfig();
   config.installed[name] = info;
@@ -84,8 +84,8 @@ export async function removeInstalledAspect(name: string): Promise<boolean> {
  * Get info about an installed aspect.
  */
 export async function getInstalledAspect(
-  name: string
-): Promise<AspectsConfig['installed'][string] | null> {
+  name: string,
+): Promise<AspectsConfig["installed"][string] | null> {
   const config = await readConfig();
   return config.installed[name] ?? null;
 }
@@ -94,7 +94,7 @@ export async function getInstalledAspect(
  * List all installed aspects.
  */
 export async function listInstalledAspects(): Promise<
-  Array<{ name: string } & AspectsConfig['installed'][string]>
+  Array<{ name: string } & AspectsConfig["installed"][string]>
 > {
   const config = await readConfig();
   return Object.entries(config.installed).map(([name, info]) => ({
@@ -110,7 +110,10 @@ export async function listInstalledAspects(): Promise<
  */
 export async function getRegistryUrl(): Promise<string> {
   const config = await readConfig();
-  return resolveRegistryUrl(process.env.ASPECTS_REGISTRY_URL, config.settings.registryUrl);
+  return resolveRegistryUrl(
+    process.env.ASPECTS_REGISTRY_URL,
+    config.settings.registryUrl,
+  );
 }
 
 /**

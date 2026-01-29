@@ -3,7 +3,11 @@ import { join, dirname } from "node:path";
 import { execSync } from "node:child_process";
 import { defineCommand } from "citty";
 import * as p from "@clack/prompts";
-import { OFFICIAL_CATEGORIES, FIELD_LIMITS, type OfficialCategory } from "../lib/schema";
+import {
+  OFFICIAL_CATEGORIES,
+  FIELD_LIMITS,
+  type OfficialCategory,
+} from "../lib/schema";
 import { listAllSets, loadSet, saveSet } from "./set";
 
 const REGISTRY_DIR = "registry/aspects";
@@ -294,20 +298,38 @@ Keep it light! A few well-crafted rules beat many vague ones.
 
       // Show current count if any exist
       if (hasAny) {
-        p.log.info(`Current: ${directives.length} directive${directives.length !== 1 ? "s" : ""}, ${instructions.length} instruction${instructions.length !== 1 ? "s" : ""}`);
+        p.log.info(
+          `Current: ${directives.length} directive${directives.length !== 1 ? "s" : ""}, ${instructions.length} instruction${instructions.length !== 1 ? "s" : ""}`,
+        );
       }
 
       // Check if approaching limit
-      if (totalCount >= FIELD_LIMITS.maxDirectives + FIELD_LIMITS.maxInstructions - 5) {
+      if (
+        totalCount >=
+        FIELD_LIMITS.maxDirectives + FIELD_LIMITS.maxInstructions - 5
+      ) {
         p.log.warn("You've added quite a few! Consider consolidating.");
       }
 
       const action = await p.select({
         message: "What would you like to add?",
         options: [
-          { value: "directive", label: "Add a directive (strict rule)", hint: "MUST-follow, emphasized across models" },
-          { value: "instruction", label: "Add an instruction (general guidance)", hint: "Softer preference" },
-          { value: "done", label: hasAny ? "Done — finish creating aspect" : "Skip — finish without adding any" },
+          {
+            value: "directive",
+            label: "Add a directive (strict rule)",
+            hint: "MUST-follow, emphasized across models",
+          },
+          {
+            value: "instruction",
+            label: "Add an instruction (general guidance)",
+            hint: "Softer preference",
+          },
+          {
+            value: "done",
+            label: hasAny
+              ? "Done — finish creating aspect"
+              : "Skip — finish without adding any",
+          },
         ],
       });
 
@@ -318,7 +340,9 @@ Keep it light! A few well-crafted rules beat many vague ones.
 
       if (action === "directive") {
         if (directives.length >= FIELD_LIMITS.maxDirectives) {
-          p.log.warn(`Maximum ${FIELD_LIMITS.maxDirectives} directives reached.`);
+          p.log.warn(
+            `Maximum ${FIELD_LIMITS.maxDirectives} directives reached.`,
+          );
           continue;
         }
 
@@ -338,8 +362,16 @@ Keep it light! A few well-crafted rules beat many vague ones.
         const priority = await p.select({
           message: "Priority level:",
           options: [
-            { value: "high", label: "High", hint: "Critical, always emphasized" },
-            { value: "medium", label: "Medium", hint: "Important but flexible" },
+            {
+              value: "high",
+              label: "High",
+              hint: "Critical, always emphasized",
+            },
+            {
+              value: "medium",
+              label: "Medium",
+              hint: "Important but flexible",
+            },
             { value: "low", label: "Low", hint: "Nice-to-have preference" },
           ],
           initialValue: "high",
@@ -356,7 +388,9 @@ Keep it light! A few well-crafted rules beat many vague ones.
         p.log.success(`Added directive #${directives.length}`);
       } else if (action === "instruction") {
         if (instructions.length >= FIELD_LIMITS.maxInstructions) {
-          p.log.warn(`Maximum ${FIELD_LIMITS.maxInstructions} instructions reached.`);
+          p.log.warn(
+            `Maximum ${FIELD_LIMITS.maxInstructions} instructions reached.`,
+          );
           continue;
         }
 
@@ -514,7 +548,7 @@ Keep it light! A few well-crafted rules beat many vague ones.
       p.log.info("\nTo submit to the registry:");
       p.log.info("1. Fork https://github.com/" + GITHUB_REPO);
       p.log.info("2. Clone your fork and run this command inside it");
-      p.log.info("3. Or visit https://getaspects.com/create");
+      p.log.info("3. Or visit https://aspects.sh/create");
     }
 
     // Check for local sets and offer to add

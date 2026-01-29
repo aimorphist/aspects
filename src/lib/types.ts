@@ -194,6 +194,13 @@ export interface ApiPublishResponse {
   url: string;
 }
 
+export interface ApiAnonymousPublishResponse {
+  ok: true;
+  hash: string;
+  size: number;
+  expiresAt?: string; // Optional expiration for anonymous uploads
+}
+
 export interface ApiUnpublishResponse {
   ok: true;
   message: string;

@@ -273,16 +273,16 @@ bun run dev publish
 
 ### Commands
 
-| Command | Description |
-|---------|-------------|
-| `create` | Interactive aspect wizard |
-| `add` | Install aspects |
-| `list` | List installed aspects |
-| `search` | Search registry |
-| `info` | Show aspect details |
-| `remove` | Uninstall aspect |
-| `validate` | Validate aspect.json |
-| `publish` | Submit to registry |
+| Command    | Description               |
+| ---------- | ------------------------- |
+| `create`   | Interactive aspect wizard |
+| `add`      | Install aspects           |
+| `list`     | List installed aspects    |
+| `search`   | Search registry           |
+| `info`     | Show aspect details       |
+| `remove`   | Uninstall aspect          |
+| `validate` | Validate aspect.json      |
+| `publish`  | Submit to registry        |
 
 See [CLI Documentation](./docs/CLI.md) for full reference.
 
@@ -315,10 +315,10 @@ bun run scan
 
 ## Links
 
-- **Website:** [getaspects.com](https://getaspects.com) _(coming soon)_
+- **Website:** [aspects.sh](https://aspects.sh) _(coming soon)_
 - **Registry:** [github.com/aimorphist/aspects](https://github.com/aimorphist/aspects)
 - **Morphist App:** [morphist.ai](https://morphist.ai)
 
 ## License
 
-MIT © [Aspects](https://getaspects.com)
+MIT © [Aspects](https://aspects.sh)

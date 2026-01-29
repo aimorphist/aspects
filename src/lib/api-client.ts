@@ -7,6 +7,7 @@ import type {
   ApiVersionContent,
   ApiSearchResult,
   ApiPublishResponse,
+  ApiAnonymousPublishResponse,
   ApiUnpublishResponse,
   ApiDeviceCode,
   ApiDevicePoll,
@@ -215,6 +216,17 @@ export async function publishAspect(aspect: Aspect): Promise<ApiPublishResponse>
     method: 'POST',
     body: { aspect },
     auth: true,
+  });
+}
+
+/**
+ * POST /aspects/anonymous — Publish anonymously by hash (no auth)
+ */
+export async function publishAnonymous(aspect: Aspect): Promise<ApiAnonymousPublishResponse> {
+  return apiFetch<ApiAnonymousPublishResponse>('/aspects/anonymous', {
+    method: 'POST',
+    body: { aspect },
+    auth: false,
   });
 }
 

@@ -1,44 +1,172 @@
-import { readFile } from 'node:fs/promises';
+import { stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { defineCommand } from 'citty';
-import { log } from '../utils/logger';
+import * as p from '@clack/prompts';
 import { blake3Hash } from '../utils/hash';
-import { getInstalledAspect } from '../lib/config';
-import { getAspectPath } from '../utils/paths';
+import { listInstalledAspects } from '../lib/config';
+import { loadInstalledAspect } from '../lib/aspect-loader';
+import { parseAspectFile } from '../lib/parser';
+import { publishAnonymous, ApiClientError } from '../lib/api-client';
 import { c, icons } from '../utils/colors';
+import type { Aspect } from '../lib/types';
+
+const MAX_ASPECT_SIZE = 51200; // 50KB
 
 export default defineCommand({
   meta: {
     name: 'share',
-    description: 'Share an installed aspect via its content hash',
+    description: 'Share an aspect anonymously via content hash (no account required)',
   },
   args: {
-    name: {
+    target: {
       type: 'positional',
-      description: 'Aspect name to share',
-      required: true,
+      description: 'Aspect name (if installed) or path to aspect.json',
+      required: false,
+    },
+    'dry-run': {
+      type: 'boolean',
+      description: 'Compute hash without uploading',
     },
   },
   async run({ args }) {
-    const installed = await getInstalledAspect(args.name);
-    if (!installed) {
-      log.error(`Aspect "${args.name}" is not installed`);
+    const dryRun = args['dry-run'] as boolean | undefined;
+
+    p.intro(`${icons.share} ${dryRun ? 'Preview' : 'Share'} an aspect`);
+
+    const target = args.target as string | undefined;
+
+    if (!target) {
+      // No target specified - show usage and list installed aspects
+      p.log.error('Please specify an aspect to share.');
+      console.log();
+      p.log.info('Usage:');
+      console.log(`  ${c.cmd('aspects share <name>')}     Share an installed aspect`);
+      console.log(`  ${c.cmd('aspects share ./path')}     Share from a local path`);
+      console.log();
+
+      const installed = await listInstalledAspects();
+      if (installed.length > 0) {
+        p.log.info('Installed aspects you can share:');
+        for (const item of installed.slice(0, 10)) {
+          console.log(`  ${icons.bullet} ${c.aspect(item.name)}`);
+        }
+        if (installed.length > 10) {
+          console.log(`  ${c.muted(`...and ${installed.length - 10} more`)}`);
+        }
+      }
       process.exit(1);
     }
 
-    // Use stored hash or compute from file
-    let hash = installed.blake3;
-    if (!hash) {
-      const aspectDir = installed.path ?? getAspectPath(args.name);
-      const content = await readFile(join(aspectDir, 'aspect.json'), 'utf-8');
-      hash = await blake3Hash(content);
+    let aspect: Aspect;
+
+    if (target.startsWith('.') || target.startsWith('/')) {
+      // Path to aspect - parseAspectFile handles both JSON and YAML
+      let filePath = target;
+      try {
+        const stats = await stat(target);
+        if (stats.isDirectory()) {
+          // Try aspect.json first, then aspect.yaml
+          const jsonPath = join(target, 'aspect.json');
+          const yamlPath = join(target, 'aspect.yaml');
+          try {
+            await stat(jsonPath);
+            filePath = jsonPath;
+          } catch {
+            filePath = yamlPath;
+          }
+        }
+      } catch {
+        p.log.error(`Path not found: ${target}`);
+        process.exit(1);
+      }
+
+      const result = await parseAspectFile(filePath);
+      if (!result.success) {
+        p.log.error(`Invalid aspect: ${result.errors.join(', ')}`);
+        process.exit(1);
+      }
+      aspect = result.aspect;
+    } else {
+      // Installed aspect name - loadInstalledAspect handles both JSON and YAML
+      const loaded = await loadInstalledAspect(target);
+      if (!loaded) {
+        p.log.error(`Aspect "${target}" is not installed or cannot be read`);
+        p.log.info('To share from a path, use: aspects share ./path/to/aspect.json');
+        process.exit(1);
+      }
+      aspect = loaded;
     }
 
+    // Serialize for hashing and size check
+    const content = JSON.stringify(aspect, null, 2);
+    const sizeBytes = Buffer.byteLength(content);
+
+    if (sizeBytes > MAX_ASPECT_SIZE) {
+      p.log.error(`Aspect too large: ${sizeBytes} bytes (${MAX_ASPECT_SIZE} byte limit)`);
+      process.exit(1);
+    }
+
+    // Compute hash
+    const hash = await blake3Hash(content);
+
+    // Show preview
     console.log();
-    console.log(`${icons.success} ${c.bold(args.name)}${c.version(`@${installed.version}`)}`);
+    console.log(`  ${c.bold(aspect.displayName)} ${c.muted(`(${aspect.name}@${aspect.version})`)}`);
+    console.log(`  ${c.italic(aspect.tagline)}`);
     console.log();
-    console.log(`  ${c.label('Hash')}    ${hash}`);
-    console.log(`  ${c.label('Install')} aspects add hash:${hash}`);
+    console.log(`  ${c.label('Size')} ${(sizeBytes / 1024).toFixed(1)} KB`);
+    console.log(`  ${c.label('Hash')} ${hash}`);
     console.log();
+
+    if (dryRun) {
+      p.log.info('Dry run — not uploading');
+      console.log();
+      console.log(`  ${c.label('Install')} aspects add hash:${hash}`);
+      console.log();
+      p.outro('(No upload performed)');
+      return;
+    }
+
+    // Upload
+    const spinner = p.spinner();
+    spinner.start('Uploading...');
+
+    try {
+      const response = await publishAnonymous(aspect);
+      spinner.stop('Uploaded');
+
+      console.log();
+      console.log(`${icons.success} ${c.bold('Shared successfully!')}`);
+      console.log();
+      console.log(`  ${c.label('Hash')}    ${response.hash}`);
+      console.log(`  ${c.label('Install')} ${c.highlight(`aspects add hash:${response.hash}`)}`);
+      if (response.expiresAt) {
+        console.log(`  ${c.label('Expires')} ${new Date(response.expiresAt).toLocaleDateString()}`);
+      }
+      console.log();
+
+      p.outro('Share this hash with anyone to let them install your aspect!');
+    } catch (err) {
+      spinner.stop('Upload failed');
+
+      if (err instanceof ApiClientError) {
+        p.log.error(err.message);
+
+        if (err.errorCode === 'already_exists') {
+          // Hash already exists on server — that's fine for sharing
+          console.log();
+          console.log(`${icons.info} This aspect is already available on the registry.`);
+          console.log();
+          console.log(`  ${c.label('Hash')}    ${hash}`);
+          console.log(`  ${c.label('Install')} ${c.highlight(`aspects add hash:${hash}`)}`);
+          console.log();
+          return;
+        }
+      } else {
+        p.log.error(`Upload failed: ${(err as Error).message}`);
+      }
+
+      process.exit(1);
+    }
   },
 });

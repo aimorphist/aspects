@@ -1,4 +1,4 @@
-# getaspects.com — Product Specification
+# aspects.sh — Product Specification
 
 > The open registry for AI personality aspects. Born from Morphist.
 
@@ -6,7 +6,7 @@
 
 ## Overview
 
-**getaspects.com** is the web home for the Aspects registry — a place to discover, create, and share AI personality modules.
+**aspects.sh** is the web home for the Aspects registry — a place to discover, create, and share AI personality modules.
 
 ### Mission
 
@@ -16,12 +16,12 @@ Make it dead simple for anyone to create and share AI personalities, with zero f
 
 ## Four Submission Flows
 
-### Flow 1: Web App (getaspects.com)
+### Flow 1: Web App (aspects.sh)
 
 **Audience:** Everyone — lowest friction
 
 ```
-User visits getaspects.com/create
+User visits aspects.sh/create
   → Fills out form (or uses AI assistant)
   → Clicks "Submit for Review"
   → Backend creates GitHub PR automatically
@@ -102,7 +102,7 @@ git push origin main
 
 ```
 ┌─────────────────┐     ┌──────────────────┐     ┌─────────────┐
-│  Morphist App   │────▶│  getaspects.com  │────▶│   GitHub    │
+│  Morphist App   │────▶│  aspects.sh  │────▶│   GitHub    │
 │  (or any app)   │     │   /api/registry  │     │   (source)  │
 └─────────────────┘     └──────────────────┘     └─────────────┘
                                │
@@ -115,11 +115,11 @@ git push origin main
 
 ### How It Works
 
-1. **Apps fetch registry from getaspects.com** (not raw GitHub)
+1. **Apps fetch registry from aspects.sh** (not raw GitHub)
 
    ```
-   GET https://getaspects.com/api/registry
-   GET https://getaspects.com/api/aspects/alaric
+   GET https://aspects.sh/api/registry
+   GET https://aspects.sh/api/aspects/alaric
    ```
 
 2. **Server proxies to GitHub** and increments counters
@@ -144,7 +144,7 @@ git push origin main
 
 3. **Counters are exposed via API**
    ```
-   GET https://getaspects.com/api/stats
+   GET https://aspects.sh/api/stats
    {
      "alaric": { "fetches": 1547, "installs": 892 },
      "default": { "fetches": 12340, "installs": 8901 }
@@ -169,7 +169,7 @@ git push origin main
 
 ---
 
-## getaspects.com Pages
+## aspects.sh Pages
 
 ### Homepage (`/`)
 
@@ -343,11 +343,11 @@ Triggered when issue with "new-aspect" label is created:
 
 ### Phase 1: Foundation
 
-- [ ] Deploy getaspects.com (basic landing)
+- [ ] Deploy aspects.sh (basic landing)
 - [ ] Set up registry proxy with counters
 - [ ] Create GitHub Issue template
 - [ ] Publish CLI to npm
-- [ ] Update Morphist to fetch from getaspects.com
+- [ ] Update Morphist to fetch from aspects.sh
 
 ### Phase 2: Web App
 
@@ -369,7 +369,7 @@ Triggered when issue with "new-aspect" label is created:
 
 ## Open Questions
 
-1. **Domain:** getaspects.com confirmed?
+1. **Domain:** aspects.sh confirmed?
 2. **Branding:** Separate from Morphist or "by Morphist"?
 3. **Moderation:** Manual review or automated only?
 4. **Monetization:** Free forever? Sponsored aspects?

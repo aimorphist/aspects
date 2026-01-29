@@ -76,7 +76,7 @@ Each client type may implement these operations differently based on its platfor
              ▼
 ┌────────────────────────────────────────────────┐
 │   Registry API                                 │
-│   (https://api.getaspects.com/v1)              │
+│   (https://api.aspects.sh/v1)              │
 │                                                │
 │   GET  /registry                               │
 │   GET  /aspects/:name                          │
@@ -101,6 +101,7 @@ Each client type may implement these operations differently based on its platfor
 ### Typical Client Workflow
 
 **Fetch an aspect:**
+
 ```
 Client calls GET /api/v1/aspects/:name/:version
   ↓
@@ -112,6 +113,7 @@ Client calls GET /api/v1/aspects/:name/:version
 ```
 
 **Search for aspects:**
+
 ```
 Client calls GET /api/v1/search?q=...&category=...
   ↓
@@ -121,6 +123,7 @@ Client calls GET /api/v1/search?q=...&category=...
 ```
 
 **Publish an aspect:**
+
 ```
 Client loads aspect.json
   ↓
@@ -140,7 +143,7 @@ Client loads aspect.json
 ### Base URL
 
 ```
-Production: https://api.getaspects.com/v1
+Production: https://api.aspects.sh/v1
 Development: http://localhost:5173/api/v1
 ```
 
@@ -205,6 +208,7 @@ GET /api/v1/registry
 ```
 
 **Cache:**
+
 - TTL: 5 minutes
 - Header: `Cache-Control: public, max-age=300, stale-while-revalidate=60`
 - ETag support for 304 Not Modified
@@ -265,13 +269,14 @@ GET /api/v1/aspects/alaric
       "blake3": "7DQrvGR3TQh5hN45vVsQgkDNjfhBG1uZeMdJh75tgWk9",
       "size": 1920,
       "deprecated": "Use 1.0.0 instead",
-      "aspect": { }
+      "aspect": {}
     }
   }
 }
 ```
 
 **Cache:**
+
 - TTL: 1 hour
 - Invalidated when new version published
 
@@ -328,6 +333,7 @@ GET /api/v1/aspects/alaric/latest
 ```
 
 **Cache:**
+
 - For specific versions: Forever (immutable)
 - For "latest" alias: 1 hour
 - Header: `Cache-Control: public, max-age=31536000, immutable` (for specific versions)
@@ -343,6 +349,7 @@ GET /api/v1/aspects/alaric/latest
 ```
 
 **Side Effects:**
+
 - Download count incremented (asynchronously, doesn't block response)
 
 ---
@@ -355,15 +362,16 @@ Search across all aspects by name, displayName, and tagline. Supports filtering 
 
 **Query Parameters:**
 
-| Parameter | Type   | Default | Max    | Description                        |
-|-----------|--------|---------|--------|------------------------------------|
-| `q`       | string | (none)  | 100    | Search query                       |
-| `category`| string | (none)  | -      | Filter by category                 |
-| `trust`   | string | (none)  | -      | Filter by trust level              |
-| `limit`   | int    | 20      | 100    | Max results per page               |
-| `offset`  | int    | 0       | -      | Pagination offset                  |
+| Parameter  | Type   | Default | Max | Description           |
+| ---------- | ------ | ------- | --- | --------------------- |
+| `q`        | string | (none)  | 100 | Search query          |
+| `category` | string | (none)  | -   | Filter by category    |
+| `trust`    | string | (none)  | -   | Filter by trust level |
+| `limit`    | int    | 20      | 100 | Max results per page  |
+| `offset`   | int    | 0       | -   | Pagination offset     |
 
 **Valid Categories:**
+
 - `assistant` — General helpful AI assistants
 - `roleplay` — Characters, personas, storytelling
 - `creative` — Writing, art, brainstorming
@@ -374,7 +382,8 @@ Search across all aspects by name, displayName, and tagline. Supports filtering 
 - `pundit` — Commentary, analysis, opinions
 
 **Valid Trust Levels:**
-- `verified` — Verified by getaspects.com
+
+- `verified` — Verified by aspects.sh
 - `community` — Community-contributed
 
 **Request:**
@@ -417,6 +426,7 @@ GET /api/v1/search?q=wizard&offset=20&limit=10
 ```
 
 **Cache:**
+
 - TTL: 60 seconds
 - ETag support for 304 Not Modified
 
@@ -472,24 +482,25 @@ Content-Type: application/json
   "ok": true,
   "name": "my-wizard",
   "version": "1.0.0",
-  "url": "https://getaspects.com/aspects/my-wizard"
+  "url": "https://aspects.sh/aspects/my-wizard"
 }
 ```
 
 **Validation Rules:**
 
-| Field           | Rule                                     |
-|-----------------|------------------------------------------|
-| `name`          | Lowercase, alphanumeric + hyphens, max 50 chars |
-| `publisher`     | Must match authenticated user's username |
-| `version`       | Valid semver (x.y.z), unique per aspect  |
-| `displayName`   | Max 100 chars                            |
-| `tagline`       | Max 200 chars                            |
-| `category`      | Must be in official categories list      |
-| `tags`          | Max 10 tags, each max 30 chars            |
-| `prompt`        | Max 50,000 chars (50KB)                  |
+| Field         | Rule                                            |
+| ------------- | ----------------------------------------------- |
+| `name`        | Lowercase, alphanumeric + hyphens, max 50 chars |
+| `publisher`   | Must match authenticated user's username        |
+| `version`     | Valid semver (x.y.z), unique per aspect         |
+| `displayName` | Max 100 chars                                   |
+| `tagline`     | Max 200 chars                                   |
+| `category`    | Must be in official categories list             |
+| `tags`        | Max 10 tags, each max 30 chars                  |
+| `prompt`      | Max 50,000 chars (50KB)                         |
 
 **Size Limits:**
+
 - Max aspect.json size: 50KB
 - Exceeding limit returns 400 error
 
@@ -537,16 +548,17 @@ Content-Type: application/json
 
 **Error Codes:**
 
-| Code            | HTTP | Description                        |
-|-----------------|------|------------------------------------|
-| `invalid_aspect`| 400  | Schema validation failed           |
-| `version_exists`| 409  | Version already published          |
-| `name_taken`    | 409  | Name owned by different publisher  |
-| `unauthorized`  | 401  | Missing or invalid auth token      |
-| `forbidden`     | 403  | Publisher mismatch or no ownership |
-| `rate_limited`  | 429  | Too many publish requests          |
+| Code             | HTTP | Description                        |
+| ---------------- | ---- | ---------------------------------- |
+| `invalid_aspect` | 400  | Schema validation failed           |
+| `version_exists` | 409  | Version already published          |
+| `name_taken`     | 409  | Name owned by different publisher  |
+| `unauthorized`   | 401  | Missing or invalid auth token      |
+| `forbidden`      | 403  | Publisher mismatch or no ownership |
+| `rate_limited`   | 429  | Too many publish requests          |
 
 **Rate Limiting:**
+
 - 10 publishes per hour per user
 
 ---
@@ -679,6 +691,7 @@ GET /api/v1/stats
 ```
 
 **Cache:**
+
 - TTL: 5 minutes
 
 ---
@@ -745,6 +758,7 @@ GET /api/v1/categories
 ```
 
 **Cache:**
+
 - TTL: 24 hours
 - Header: `Cache-Control: public, max-age=86400`
 
@@ -756,12 +770,12 @@ GET /api/v1/categories
 
 The Registry API supports multiple authentication methods depending on your client type:
 
-| Client Type | Auth Method | Use Case |
-|-------------|-------------|----------|
-| Web Frontend | Session cookies | Browser-based dashboards, user sessions |
-| CLI Tool | Device Authorization (PKCE) | Command-line tools, headless environments |
-| Mobile App | Bearer tokens (OAuth) | Native mobile apps, third-party integrations |
-| Third-party Integration | API keys or Bearer tokens | Server-to-server communication |
+| Client Type             | Auth Method                 | Use Case                                     |
+| ----------------------- | --------------------------- | -------------------------------------------- |
+| Web Frontend            | Session cookies             | Browser-based dashboards, user sessions      |
+| CLI Tool                | Device Authorization (PKCE) | Command-line tools, headless environments    |
+| Mobile App              | Bearer tokens (OAuth)       | Native mobile apps, third-party integrations |
+| Third-party Integration | API keys or Bearer tokens   | Server-to-server communication               |
 
 This guide focuses on **Device Authorization** since it's most common for CLI clients and is self-contained. Web clients typically use standard OAuth session flows managed by the web framework.
 
@@ -774,7 +788,7 @@ The Device Authorization flow with PKCE provides secure authentication for CLI c
 ```
 ┌──────────┐                    ┌──────────────────┐                ┌─────────────────┐
 │ Client   │                    │ Registry API     │                │ Identikey       │
-│ (CLI)    │                    │ (getaspects.com) │                │ (auth server)   │
+│ (CLI)    │                    │ (aspects.sh) │                │ (auth server)   │
 └─────┬────┘                    └────────┬─────────┘                └────────┬────────┘
       │                                  │                                    │
       │ 1. Initiate login                │                                    │
@@ -845,6 +859,7 @@ POST /api/v1/auth/device
 ```
 
 **Save for polling:**
+
 - `device_code` — Use in poll requests
 - `code_verifier` — PKCE code verifier, use in poll requests
 - `expires_in` — Time until code expires (seconds)
@@ -859,6 +874,7 @@ Display the verification URL and user code to the user. For CLI clients, this ty
 3. Display the user code prominently (they'll need to enter it at the URL)
 
 **Example output:**
+
 ```
 Please visit this URL and enter the code:
 https://auth.identikey.io/device?user_code=ABC-123-DEF
@@ -884,33 +900,40 @@ POST /api/v1/auth/device/poll
 **Responses:**
 
 **Still pending:**
+
 ```json
 {
   "ok": false,
   "status": "pending"
 }
 ```
+
 → Wait `interval` seconds, poll again
 
 **Polling too fast:**
+
 ```json
 {
   "ok": false,
   "status": "slow_down"
 }
 ```
+
 → Double the `interval`, try again
 
 **Code expired:**
+
 ```json
 {
   "ok": false,
   "status": "expired"
 }
 ```
+
 → Start over with new device code
 
 **User denied:**
+
 ```json
 {
   "ok": false,
@@ -918,9 +941,11 @@ POST /api/v1/auth/device/poll
   "error": "User denied authorization"
 }
 ```
+
 → Start over
 
 **Success:**
+
 ```json
 {
   "ok": true,
@@ -930,6 +955,7 @@ POST /api/v1/auth/device/poll
   "expires_in": 3600
 }
 ```
+
 → Store tokens
 
 #### Step 4: Store Tokens
@@ -937,10 +963,11 @@ POST /api/v1/auth/device/poll
 Store the tokens securely for future use. Where and how you store them is client-specific:
 
 **CLI Example** (in `~/.aspects/config.json`):
+
 ```json
 {
   "version": 1,
-  "registryUrl": "https://api.getaspects.com/v1",
+  "registryUrl": "https://api.aspects.sh/v1",
   "auth": {
     "accessToken": "eyJhbGc...",
     "refreshToken": "eyJhbGc...",
@@ -951,10 +978,12 @@ Store the tokens securely for future use. Where and how you store them is client
 ```
 
 **Web Client** (in browser session storage or cookies):
+
 - Server typically manages session state
 - No explicit token storage needed on client
 
 **Mobile App** (in secure local storage):
+
 - Store in platform-specific secure storage (Keychain on iOS, Keystore on Android)
 - Include token refresh logic
 
@@ -996,17 +1025,20 @@ Every client needs to implement the following core operations:
 Retrieve a specific aspect version from the registry.
 
 **Operation:**
+
 - Call `GET /api/v1/aspects/:name/:version` or `GET /api/v1/aspects/:name/latest`
 - Parse the returned aspect.json content
 - Store or use the aspect data (implementation varies by client)
 
 **Common use cases:**
+
 - CLI: Download and store locally
 - Web: Display details in browser
 - Mobile: Cache locally, inject into app
 - Third-party: Send to external service
 
 **Error handling:**
+
 - 404 → Aspect or version not found
 - Network error → Retry with backoff
 
@@ -1017,17 +1049,20 @@ Retrieve a specific aspect version from the registry.
 Find aspects using keywords, categories, and filters.
 
 **Operation:**
+
 - Call `GET /api/v1/search?q=...&category=...&limit=...&offset=...`
 - Parse paginated results
 - Display or process results
 
 **Common filters:**
+
 - `q` — Search term
 - `category` — Aspect category
 - `trust` — Trust level (verified, community)
 - `limit` / `offset` — Pagination
 
 **Error handling:**
+
 - 400 → Invalid parameters
 - Network error → Show cached results or error message
 
@@ -1038,6 +1073,7 @@ Find aspects using keywords, categories, and filters.
 Publish a new aspect or new version to the registry.
 
 **Operation:**
+
 1. Load aspect.json from local source
 2. Validate schema, size, and naming rules
 3. Obtain authentication token
@@ -1045,6 +1081,7 @@ Publish a new aspect or new version to the registry.
 5. Handle response (success or error)
 
 **Validation checklist:**
+
 - All required fields present
 - Schema conforms to spec
 - File size < 50KB
@@ -1054,6 +1091,7 @@ Publish a new aspect or new version to the registry.
 - Category is in official list
 
 **Error handling:**
+
 - 400 → Schema/validation error (show specific field errors)
 - 401 → Not authenticated (direct to login)
 - 409 → Conflict (version exists or name taken)
@@ -1066,6 +1104,7 @@ Publish a new aspect or new version to the registry.
 Obtain authentication credentials for publishing and other protected operations.
 
 **Operation** (Device Authorization flow):
+
 1. POST to `/api/v1/auth/device` to request device code
 2. Display verification URL and user code to user
 3. Poll `/api/v1/auth/device/poll` until authorized
@@ -1073,12 +1112,14 @@ Obtain authentication credentials for publishing and other protected operations.
 5. Use Bearer token in subsequent requests
 
 **Variations by client type:**
+
 - CLI: Device flow as described above
 - Web: Use standard OAuth session flow
 - Mobile: Device flow or native OAuth integration
 - Third-party: API key or bearer token exchange
 
 **Token usage:**
+
 - Include in `Authorization: Bearer <token>` header for authenticated requests
 - Refresh when expired (optional, can require re-login)
 - Clear on logout
@@ -1090,11 +1131,13 @@ Obtain authentication credentials for publishing and other protected operations.
 Retrieve registry-wide statistics.
 
 **Operation:**
+
 - Call `GET /api/v1/stats`
 - Parse response for total aspects, downloads, popular packages
 - Display or use in dashboards
 
 **Use cases:**
+
 - Web dashboard: Show registry health
 - CLI: Display discovery stats
 - Analytics: Track usage patterns
@@ -1106,11 +1149,13 @@ Retrieve registry-wide statistics.
 List available aspect categories.
 
 **Operation:**
+
 - Call `GET /api/v1/categories`
 - Cache locally (24-hour TTL)
 - Use in search filters or category selection
 
 **Use cases:**
+
 - Web: Category dropdown menus
 - CLI: Suggest categories during publish
 - Mobile: Category browsing UI
@@ -1133,29 +1178,32 @@ The CLI needs an HTTP client that supports:
 
 **Recommended Libraries:**
 
-| Language | Library           | Notes                                  |
-|----------|-------------------|----------------------------------------|
-| Node.js  | `node-fetch`, `undici` | Built-in (Node 18+)        |
-| Python   | `requests`, `httpx`    | Synchronous or async                  |
-| Go       | `net/http`, `resty`    | Standard library sufficient           |
-| Rust     | `reqwest`, `ureq`      | Async or blocking                     |
-| TypeScript | `axios`, `fetch`     | Node or Bun runtime                   |
+| Language   | Library                | Notes                       |
+| ---------- | ---------------------- | --------------------------- |
+| Node.js    | `node-fetch`, `undici` | Built-in (Node 18+)         |
+| Python     | `requests`, `httpx`    | Synchronous or async        |
+| Go         | `net/http`, `resty`    | Standard library sufficient |
+| Rust       | `reqwest`, `ureq`      | Async or blocking           |
+| TypeScript | `axios`, `fetch`       | Node or Bun runtime         |
 
 ### Local State Management
 
 Most clients need to store some local state (tokens, cache, etc.). Where and what you store is client-specific:
 
 **CLI clients** might store:
+
 - Authentication tokens
 - Cached registry data
 - User preferences/config
 
 **Web clients** typically store:
+
 - Session cookies (server-managed)
 - Client-side cache (optional)
 - User preferences (localStorage)
 
 **Mobile apps** typically store:
+
 - Auth tokens (in secure storage)
 - Downloaded aspects
 - User preferences
@@ -1164,19 +1212,16 @@ Most clients need to store some local state (tokens, cache, etc.). Where and wha
 
 ```javascript
 function saveConfig(config) {
-  const configPath = path.join(os.homedir(), '.aspects', 'config.json');
-  fs.writeFileSync(
-    configPath,
-    JSON.stringify(config, null, 2)
-  );
+  const configPath = path.join(os.homedir(), ".aspects", "config.json");
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 }
 
 function loadConfig() {
-  const configPath = path.join(os.homedir(), '.aspects', 'config.json');
+  const configPath = path.join(os.homedir(), ".aspects", "config.json");
   if (!fs.existsSync(configPath)) {
     return null;
   }
-  return JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+  return JSON.parse(fs.readFileSync(configPath, "utf-8"));
 }
 ```
 
@@ -1222,11 +1267,11 @@ async function fetchAspect(name, version) {
         case 404:
           throw new Error(`Aspect ${name}@${version} not found`);
         case 429:
-          throw new Error('Rate limited. Try again in a moment.');
+          throw new Error("Rate limited. Try again in a moment.");
         case 500:
-          throw new Error('Registry unavailable. Try again later.');
+          throw new Error("Registry unavailable. Try again later.");
         default:
-          throw new Error(error.message || 'Unknown error');
+          throw new Error(error.message || "Unknown error");
       }
     }
 
@@ -1234,7 +1279,7 @@ async function fetchAspect(name, version) {
   } catch (error) {
     if (error instanceof TypeError) {
       // Network error
-      throw new Error('Network error. Check your connection.');
+      throw new Error("Network error. Check your connection.");
     }
     throw error;
   }
@@ -1247,20 +1292,24 @@ async function fetchAspect(name, version) {
 function validateAspect(aspect) {
   const errors = [];
 
-  if (!aspect.name || typeof aspect.name !== 'string') {
-    errors.push('name: Required and must be string');
+  if (!aspect.name || typeof aspect.name !== "string") {
+    errors.push("name: Required and must be string");
   }
 
   if (!aspect.name.match(/^[a-z0-9-]+$/)) {
-    errors.push('name: Must contain only lowercase letters, numbers, and hyphens');
+    errors.push(
+      "name: Must contain only lowercase letters, numbers, and hyphens",
+    );
   }
 
-  if ((JSON.stringify(aspect).length) > 51200) {
-    errors.push(`Size: ${JSON.stringify(aspect).length} bytes exceeds 50KB limit`);
+  if (JSON.stringify(aspect).length > 51200) {
+    errors.push(
+      `Size: ${JSON.stringify(aspect).length} bytes exceeds 50KB limit`,
+    );
   }
 
   if (errors.length > 0) {
-    throw new Error('Invalid aspect.json:\n' + errors.join('\n'));
+    throw new Error("Invalid aspect.json:\n" + errors.join("\n"));
   }
 }
 ```
@@ -1276,7 +1325,7 @@ function validateAspect(aspect) {
 **Step 1: Call the API**
 
 ```bash
-curl -X GET "https://api.getaspects.com/v1/aspects/alaric/1.0.0" \
+curl -X GET "https://api.aspects.sh/v1/aspects/alaric/1.0.0" \
   -H "Accept: application/json"
 ```
 
@@ -1314,19 +1363,20 @@ The API returns the complete aspect content. The client now processes it based o
 - **Third-party:** Send to external service
 
 **Example: CLI storage**
+
 ```javascript
 // Save to ~/.aspects/aspects/alaric@1.0.0/aspect.json
 const config = loadConfig();
 const aspectPath = path.join(
   os.homedir(),
-  '.aspects',
-  'aspects',
-  `${name}@${version}`
+  ".aspects",
+  "aspects",
+  `${name}@${version}`,
 );
 fs.mkdirSync(aspectPath, { recursive: true });
 fs.writeFileSync(
-  path.join(aspectPath, 'aspect.json'),
-  JSON.stringify(aspectData, null, 2)
+  path.join(aspectPath, "aspect.json"),
+  JSON.stringify(aspectData, null, 2),
 );
 ```
 
@@ -1339,7 +1389,7 @@ fs.writeFileSync(
 **Step 1: Search**
 
 ```bash
-curl -X GET "https://api.getaspects.com/v1/search?q=wizard&limit=10" \
+curl -X GET "https://api.aspects.sh/v1/search?q=wizard&limit=10" \
   -H "Accept: application/json"
 ```
 
@@ -1378,6 +1428,7 @@ curl -X GET "https://api.getaspects.com/v1/search?q=wizard&limit=10" \
 Parse the results and display them to the user (format depends on client type):
 
 **CLI output:**
+
 ```
 Found 2 aspects:
 
@@ -1406,7 +1457,7 @@ const schema = buildAspectSchema(); // Define based on spec
 const validation = schema.safeParse(aspectData);
 if (!validation.success) {
   // Show validation errors
-  console.error('Invalid aspect:', validation.error.issues);
+  console.error("Invalid aspect:", validation.error.issues);
   return;
 }
 ```
@@ -1427,7 +1478,7 @@ if (!token) {
 **Step 3: POST to API with auth**
 
 ```bash
-curl -X POST "https://api.getaspects.com/v1/aspects" \
+curl -X POST "https://api.aspects.sh/v1/aspects" \
   -H "Authorization: Bearer <access_token>" \
   -H "Content-Type: application/json" \
   -d '{
@@ -1448,7 +1499,7 @@ curl -X POST "https://api.getaspects.com/v1/aspects" \
   "ok": true,
   "name": "my-wizard",
   "version": "1.0.0",
-  "url": "https://getaspects.com/aspects/my-wizard"
+  "url": "https://aspects.sh/aspects/my-wizard"
 }
 ```
 
@@ -1477,7 +1528,7 @@ if (response.ok) {
 **Step 1: Request device code**
 
 ```bash
-curl -X POST "https://api.getaspects.com/v1/auth/device" \
+curl -X POST "https://api.aspects.sh/v1/auth/device" \
   -H "Content-Type: application/json"
 ```
 
@@ -1510,7 +1561,7 @@ Waiting for authorization...
 **Step 3: Poll until authorized**
 
 ```bash
-curl -X POST "https://api.getaspects.com/v1/auth/device/poll" \
+curl -X POST "https://api.aspects.sh/v1/auth/device/poll" \
   -H "Content-Type: application/json" \
   -d '{
     "device_code": "ABC123DEVICE456",
@@ -1550,7 +1601,7 @@ const tokens = {
   accessToken: response.access_token,
   refreshToken: response.refresh_token,
   expiresAt: new Date(Date.now() + response.expires_in * 1000),
-  username: response.username
+  username: response.username,
 };
 saveTokens(tokens); // Implementation-specific storage
 ```
@@ -1565,25 +1616,25 @@ Display success message and indicate they can now use authenticated operations.
 
 ### API Error Codes & Meanings
 
-| Code              | HTTP | Meaning                           | Suggested CLI Message                |
-|-------------------|------|-----------------------------------|--------------------------------------|
-| `not_found`       | 404  | Aspect/version not found          | "Aspect not found. Try 'aspects search' to discover aspects" |
-| `invalid_aspect`  | 400  | Schema validation failed          | "Invalid aspect.json: [field errors]" |
-| `version_exists`  | 409  | Version already published         | "Version X.Y.Z already published. Bump your version number" |
-| `name_taken`      | 409  | Name owned by different user      | "Aspect name taken. Choose a different name" |
-| `unauthorized`    | 401  | Missing/invalid auth token        | "Not logged in. Run 'aspects login' first" |
-| `forbidden`       | 403  | Auth mismatch or no ownership     | "Permission denied. Check your username/token" |
-| `rate_limited`    | 429  | Too many requests                 | "Rate limited. Try again in a minute" |
-| `invalid_version` | 400  | Bad semver format                 | "Invalid version format. Use semver (e.g., 1.0.0)" |
+| Code              | HTTP | Meaning                       | Suggested CLI Message                                        |
+| ----------------- | ---- | ----------------------------- | ------------------------------------------------------------ |
+| `not_found`       | 404  | Aspect/version not found      | "Aspect not found. Try 'aspects search' to discover aspects" |
+| `invalid_aspect`  | 400  | Schema validation failed      | "Invalid aspect.json: [field errors]"                        |
+| `version_exists`  | 409  | Version already published     | "Version X.Y.Z already published. Bump your version number"  |
+| `name_taken`      | 409  | Name owned by different user  | "Aspect name taken. Choose a different name"                 |
+| `unauthorized`    | 401  | Missing/invalid auth token    | "Not logged in. Run 'aspects login' first"                   |
+| `forbidden`       | 403  | Auth mismatch or no ownership | "Permission denied. Check your username/token"               |
+| `rate_limited`    | 429  | Too many requests             | "Rate limited. Try again in a minute"                        |
+| `invalid_version` | 400  | Bad semver format             | "Invalid version format. Use semver (e.g., 1.0.0)"           |
 
 ### Network Errors
 
-| Situation | Example | Handler                                |
-|-----------|---------|----------------------------------------|
-| No network | Connection refused | "Network error. Check your connection" |
-| DNS failure | ENOTFOUND | "Cannot reach registry. Check DNS" |
-| Timeout | Request timeout | "Registry took too long. Try again" |
-| Invalid URL | Bad URL format | "Invalid registry URL in config" |
+| Situation   | Example            | Handler                                |
+| ----------- | ------------------ | -------------------------------------- |
+| No network  | Connection refused | "Network error. Check your connection" |
+| DNS failure | ENOTFOUND          | "Cannot reach registry. Check DNS"     |
+| Timeout     | Request timeout    | "Registry took too long. Try again"    |
+| Invalid URL | Bad URL format     | "Invalid registry URL in config"       |
 
 ### Validation Errors
 
@@ -1642,14 +1693,14 @@ async function fetchWithRetry(url, options, maxRetries = 3) {
       if (response.status === 429) {
         if (attempt < maxRetries) {
           const delay = Math.pow(2, attempt - 1) * 1000; // 1s, 2s, 4s
-          await new Promise(r => setTimeout(r, delay));
+          await new Promise((r) => setTimeout(r, delay));
           continue;
         }
       }
 
       if (response.status >= 500 && attempt < maxRetries) {
         const delay = 1000 * attempt;
-        await new Promise(r => setTimeout(r, delay));
+        await new Promise((r) => setTimeout(r, delay));
         continue;
       }
 
@@ -1657,7 +1708,7 @@ async function fetchWithRetry(url, options, maxRetries = 3) {
     } catch (error) {
       if (attempt === maxRetries) throw error;
       const delay = 1000 * attempt;
-      await new Promise(r => setTimeout(r, delay));
+      await new Promise((r) => setTimeout(r, delay));
     }
   }
 }
@@ -1697,7 +1748,7 @@ const aspect = loadAspectData(); // Implementation-specific
 ```javascript
 const validation = aspectSchema.safeParse(aspect);
 if (!validation.success) {
-  showErrors('Invalid aspect:', validation.error.issues);
+  showErrors("Invalid aspect:", validation.error.issues);
   return;
 }
 ```
@@ -1713,7 +1764,7 @@ if (!token) {
 
 // Verify publisher matches
 if (aspect.publisher !== getUsername()) {
-  showError('Publisher field does not match your account');
+  showError("Publisher field does not match your account");
   return;
 }
 ```
@@ -1732,12 +1783,12 @@ if (size > 51200) {
 
 ```javascript
 const response = await fetch(`${registryUrl}/aspects`, {
-  method: 'POST',
+  method: "POST",
   headers: {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json'
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
   },
-  body: JSON.stringify({ aspect })
+  body: JSON.stringify({ aspect }),
 });
 
 const result = await response.json();
@@ -1753,26 +1804,31 @@ showSuccess(`Published ${result.name}@${result.version}`);
 ### Handling Publish Errors
 
 **version_exists (409):**
+
 - Message: "Version X.Y.Z already published"
 - Action: User must increment version number and try again
 - Example: Change "1.0.0" to "1.0.1"
 
 **name_taken (409):**
+
 - Message: "Aspect name is owned by another publisher"
 - Action: User must choose a unique name
 - Example: Change "my-aspect" to "my-aspect-v2"
 
 **invalid_aspect (400):**
+
 - Message: Lists specific validation errors
 - Action: Fix indicated fields (category, size, naming, etc.)
 - Example: Category must be one of [assistant, roleplay, ...]
 
 **unauthorized (401):**
+
 - Message: "Missing or invalid authentication token"
 - Action: User must authenticate via device flow
 - Example: Redirect to login/authentication flow
 
 **forbidden (403):**
+
 - Message: "Publisher field does not match your account"
 - Action: User must either:
   - Update publisher field to match their account
@@ -1780,6 +1836,7 @@ showSuccess(`Published ${result.name}@${result.version}`);
 - Example: Your account is @alice, but aspect.json has publisher: "bob"
 
 **rate_limited (429):**
+
 - Message: "Too many publish requests"
 - Action: User should wait before trying again (limit: 10/hour)
 - Retry-After header may be included
@@ -1791,6 +1848,7 @@ showSuccess(`Published ${result.name}@${result.version}`);
 ### Core Operation Tests
 
 **Fetch Aspect Tests:**
+
 - [ ] Fetch latest version: GET /aspects/:name/latest
 - [ ] Fetch specific version: GET /aspects/:name/1.0.0
 - [ ] Handle not found (404): Non-existent aspect
@@ -1801,6 +1859,7 @@ showSuccess(`Published ${result.name}@${result.version}`);
 - [ ] Verify Blake3 hash if validation implemented
 
 **Search Tests:**
+
 - [ ] Search by keyword: GET /search?q=wizard
 - [ ] Search with no results
 - [ ] Filter by category: GET /search?category=roleplay
@@ -1812,6 +1871,7 @@ showSuccess(`Published ${result.name}@${result.version}`);
 - [ ] Verify result sorting/ordering
 
 **Publish Tests:**
+
 - [ ] Valid publish: POST /aspects with valid aspect
 - [ ] Verify response includes name, version, URL
 - [ ] Handle duplicate version (409)
@@ -1824,6 +1884,7 @@ showSuccess(`Published ${result.name}@${result.version}`);
 - [ ] Handle rate limiting (429)
 
 **Authentication Tests:**
+
 - [ ] Device flow: POST /auth/device returns device code
 - [ ] Device flow: Display user code and verification URL
 - [ ] Device flow: Poll /auth/device/poll successfully
@@ -1837,6 +1898,7 @@ showSuccess(`Published ${result.name}@${result.version}`);
 - [ ] Logout: Clear stored tokens
 
 **Statistics & Browse Tests:**
+
 - [ ] GET /stats returns aggregate data
 - [ ] GET /categories returns full category list
 - [ ] Verify cache headers are respected
@@ -1845,6 +1907,7 @@ showSuccess(`Published ${result.name}@${result.version}`);
 ### Platform-Specific Tests
 
 **CLI Clients:**
+
 - [ ] Command-line argument parsing
 - [ ] Configuration file read/write
 - [ ] Local state directory creation and cleanup
@@ -1852,6 +1915,7 @@ showSuccess(`Published ${result.name}@${result.version}`);
 - [ ] Exit codes follow standard conventions
 
 **Web Clients:**
+
 - [ ] Session cookie handling
 - [ ] CSRF protection
 - [ ] Responsive design (mobile, tablet, desktop)
@@ -1859,6 +1923,7 @@ showSuccess(`Published ${result.name}@${result.version}`);
 - [ ] Progressive enhancement (graceful degradation)
 
 **Mobile Clients:**
+
 - [ ] Secure token storage
 - [ ] Background sync/refresh
 - [ ] Offline mode (cache local data)
@@ -1900,7 +1965,16 @@ Complete JSON Schema for aspect.json validation:
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
-  "required": ["schemaVersion", "name", "publisher", "version", "displayName", "tagline", "category", "prompt"],
+  "required": [
+    "schemaVersion",
+    "name",
+    "publisher",
+    "version",
+    "displayName",
+    "tagline",
+    "category",
+    "prompt"
+  ],
   "properties": {
     "schemaVersion": {
       "type": "integer",
@@ -1939,7 +2013,16 @@ Complete JSON Schema for aspect.json validation:
     },
     "category": {
       "type": "string",
-      "enum": ["assistant", "roleplay", "creative", "productivity", "education", "gaming", "spiritual", "pundit"],
+      "enum": [
+        "assistant",
+        "roleplay",
+        "creative",
+        "productivity",
+        "education",
+        "gaming",
+        "spiritual",
+        "pundit"
+      ],
       "description": "Category"
     },
     "tags": {

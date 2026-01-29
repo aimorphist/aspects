@@ -36,4 +36,5 @@ export const icons = {
   package: '📦',
   search: '🔍',
   wizard: '🧙',
+  share: '🔗',
 };

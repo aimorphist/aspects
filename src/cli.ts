@@ -69,11 +69,4 @@ const main = defineCommand({
 // Show banner
 morphistBanner();
 
-// Default to 'create' if no command specified
-const args = process.argv.slice(2);
-if (args.length === 0 || (args[0] && args[0].startsWith('-') && args[0] !== '--help' && args[0] !== '-h')) {
-  // No command or only flags (not --help), default to create
-  process.argv.splice(2, 0, 'create');
-}
-
 runMain(main);

@@ -46,7 +46,11 @@ export default defineCommand({
     if (!dryRun) {
       const loggedIn = await isLoggedIn();
       if (!loggedIn) {
-        p.log.error('Not logged in. Run "aspects login" first.');
+        p.log.error('Login required to publish with a name.');
+        console.log();
+        p.log.info(`Run ${c.highlight('aspects login')} to create an account and claim aspect names.`);
+        console.log();
+        p.log.info(`Or use ${c.highlight('aspects share')} to publish anonymously via hash (no account needed).`);
         process.exit(1);
       }
     }
