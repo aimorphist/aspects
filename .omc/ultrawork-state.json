@@ -1,7 +1,9 @@
 {
-  "active": true,
+  "active": false,
   "started_at": "2026-01-28T07:37:59.887Z",
+  "completed_at": "2026-01-29T23:45:00.000Z",
   "original_prompt": "/oh-my-claudecode:ultrawork  @.omc/plans/guide-alignment-blake3.md",
   "reinforcement_count": 10,
-  "last_checked_at": "2026-01-29T21:37:13.216Z"
+  "last_checked_at": "2026-01-29T21:37:13.216Z",
+  "status": "completed"
 }
