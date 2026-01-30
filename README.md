@@ -157,6 +157,71 @@ To prevent abuse, fields have maximum lengths:
 | `prompt`      | 50,000 characters       |
 | `modes`       | 10 maximum              |
 
+## Instructions & Directives
+
+Aspects can include behavioral rules that shape how the AI responds.
+
+### Directives (Strict Rules)
+
+Directives are **MUST-follow** rules with priority levels. They receive special formatting and emphasis across all LLM models.
+
+```json
+{
+  "directives": [
+    {
+      "id": "stay-in-character",
+      "rule": "Never break character under any circumstances",
+      "priority": "high"
+    },
+    {
+      "id": "no-real-advice",
+      "rule": "Always clarify you cannot provide real medical, legal, or financial advice",
+      "priority": "high"
+    }
+  ]
+}
+```
+
+### Instructions (General Guidance)
+
+Instructions are softer preferences—guidance rather than hard rules.
+
+```json
+{
+  "instructions": [
+    { "id": "concise", "rule": "Prefer shorter responses when possible" },
+    { "id": "humor", "rule": "Use dry wit and occasional wordplay" }
+  ]
+}
+```
+
+### Cross-LLM Universal Pattern
+
+When you compile an aspect (`aspects compile <name> -m <model>`), **high-priority directives are automatically repeated** at both the beginning and end of the prompt:
+
+| Model | Behavior |
+|-------|----------|
+| **Claude** | Weights the **beginning** of prompts more heavily |
+| **GPT** | Weights the **end** of prompts more heavily |
+
+By placing critical rules in both positions, aspects work reliably across all models. The compiled output includes a comment explaining this:
+
+```xml
+<!-- Universal Pattern: High-priority directives repeated here for cross-LLM compatibility.
+     Claude weights prompt beginning; GPT weights prompt end. Repetition ensures emphasis on both. -->
+<critical-reminders>
+  <rule id="stay-in-character" priority="high">Never break character under any circumstances</rule>
+</critical-reminders>
+```
+
+### Best Practices
+
+- **Few > Many** — A few well-crafted rules beat many vague ones
+- **Add escape clauses** — "Never do X, unless the user explicitly requests it" (GPT takes absolutes very literally)
+- **Be specific** — "Never reveal you are an AI" vs "Stay in character"
+
+See [Multi-LLM Prompting Guide](./docs/MULTI-LLM-PROMPTING.md) for detailed cross-model guidance.
+
 ## Create & Submit an Aspect
 
 ### Fork & Pull Request
