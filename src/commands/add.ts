@@ -78,7 +78,12 @@ Examples:
         continue;
       }
 
-      const result = await installAspect(spec, { force: !!args.force, scope, projectRoot });
+      const result = await installAspect(spec, { 
+        force: !!args.force, 
+        scope, 
+        projectRoot,
+        specifier: specStr,  // Preserve original input for display/reinstall
+      });
 
       if (!result.success) {
         results.push({ spec: specStr, success: false, error: result.error });

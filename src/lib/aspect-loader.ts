@@ -20,7 +20,7 @@ export async function loadInstalledAspect(
   if (!installed) return null;
 
   // Use custom path for local installs, otherwise standard path
-  const aspectDir = installed.path ?? getAspectPath(name, scope, projectRoot);
+  const aspectDir = installed.localPath ?? getAspectPath(name, scope, projectRoot);
 
   // Try aspect.json first
   const jsonResult = await parseAspectFile(join(aspectDir, ASPECT_FILENAME));

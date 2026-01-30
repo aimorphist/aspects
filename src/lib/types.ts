@@ -76,20 +76,42 @@ export interface AuthTokens {
   username: string;
 }
 
+/**
+ * Trust level indicates provenance and verification status.
+ * - verified: Registry publisher with verified identity
+ * - community: Registry publisher without verification
+ * - github: From public GitHub repository
+ * - local: Installed from local filesystem
+ */
+export type TrustLevel = 'verified' | 'community' | 'github' | 'local';
+
 export interface InstalledAspect {
   version: string;
-  source: 'registry' | 'github' | 'local';
   installedAt: string;
-  blake3: string;
-  path?: string;      // For local installs - absolute path to aspect dir
-  githubRef?: string; // For github installs: tag/branch/commit used
+  blake3: string;               // Canonical content hash at install time
+  
+  source: 'registry' | 'github' | 'local';
+  trust: TrustLevel;
+  
+  // Registry-specific: publisher namespace (undefined = anonymous/hash-based)
+  publisher?: string;
+  
+  // GitHub-specific: "owner/repo@ref"
+  githubRef?: string;
+  
+  // Local-specific: absolute path to aspect directory
+  localPath?: string;
+  
+  // Original specifier used to install (enables reinstall, display)
+  // e.g. "alaric", "morphist/alaric", "blake3:abc...", "./path", "github:owner/repo"
+  specifier: string;
 }
 
 /**
  * Parsed install specification
  */
 export type InstallSpec =
-  | { type: 'registry'; name: string; version?: string }
+  | { type: 'registry'; name: string; publisher?: string; version?: string }
   | { type: 'github'; owner: string; repo: string; ref?: string }
   | { type: 'local'; path: string }
   | { type: 'hash'; hash: string };

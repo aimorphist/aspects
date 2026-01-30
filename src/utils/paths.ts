@@ -26,14 +26,21 @@ let cachedProjectRoot: string | null = null;
 /**
  * Find the project root by walking up from cwd looking for .aspects/ or aspects.json.
  * Returns null if no project root found.
+ * Note: Excludes home directory to avoid confusing ~/.aspects (global) with project-local.
  */
 export async function findProjectRoot(): Promise<string | null> {
   if (cachedProjectRoot !== null) return cachedProjectRoot || null;
 
   let dir = process.cwd();
   const root = '/';
+  const home = homedir();
 
   while (dir !== root) {
+    // Don't treat ~/.aspects as a project root - that's global
+    if (dir === home) {
+      break;
+    }
+    
     try {
       await stat(join(dir, PROJECT_ASPECTS_DIR_NAME));
       cachedProjectRoot = dir;

@@ -137,16 +137,20 @@ Don't want an account? Use 'aspects share' instead:
       process.exit(1);
     }
 
-    // Check publisher matches auth (unless dry-run)
-    if (!dryRun) {
-      const auth = await getAuth();
-      if (validation.aspect.publisher && auth && validation.aspect.publisher !== auth.username) {
+    // Check/set publisher from auth (unless dry-run)
+    const auth = await getAuth();
+    if (!dryRun && auth) {
+      if (validation.aspect.publisher && validation.aspect.publisher !== auth.username) {
         spinner2.stop("Validation failed");
         p.log.error(
           `Publisher mismatch: aspect.json has "${validation.aspect.publisher}" but you are "@${auth.username}"`
         );
         p.log.info("Update the publisher field in aspect.json or log in with the correct account.");
         process.exit(1);
+      }
+      // Auto-set publisher from auth context if not specified
+      if (!validation.aspect.publisher) {
+        validation.aspect.publisher = auth.username;
       }
     }
 
@@ -187,6 +191,10 @@ Don't want an account? Use 'aspects share' instead:
 
     try {
       const parsed = JSON.parse(validation.content);
+      // Inject publisher from auth if not in the file
+      if (auth && !parsed.publisher) {
+        parsed.publisher = auth.username;
+      }
       const result = await publishAspect(parsed);
       spinner3.stop("Published");
 

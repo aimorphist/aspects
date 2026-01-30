@@ -4,22 +4,32 @@ import { parseInstallSpec } from '../../src/lib/resolver';
 describe('parseInstallSpec', () => {
   test('parses plain registry name', () => {
     const result = parseInstallSpec('alaric');
-    expect(result).toEqual({ type: 'registry', name: 'alaric', version: undefined });
+    expect(result).toEqual({ type: 'registry', name: 'alaric', publisher: undefined, version: undefined });
   });
 
   test('parses registry name with version', () => {
     const result = parseInstallSpec('alaric@1.0.0');
-    expect(result).toEqual({ type: 'registry', name: 'alaric', version: '1.0.0' });
+    expect(result).toEqual({ type: 'registry', name: 'alaric', publisher: undefined, version: '1.0.0' });
   });
 
-  test('parses scoped package name', () => {
+  test('parses qualified publisher/name', () => {
+    const result = parseInstallSpec('morphist/alaric');
+    expect(result).toEqual({ type: 'registry', name: 'alaric', publisher: 'morphist', version: undefined });
+  });
+
+  test('parses qualified publisher/name with version', () => {
+    const result = parseInstallSpec('morphist/alaric@2.0.0');
+    expect(result).toEqual({ type: 'registry', name: 'alaric', publisher: 'morphist', version: '2.0.0' });
+  });
+
+  test('parses @scope/name (strips @ for npm compat)', () => {
     const result = parseInstallSpec('@scope/name');
-    expect(result).toEqual({ type: 'registry', name: '@scope/name', version: undefined });
+    expect(result).toEqual({ type: 'registry', name: 'name', publisher: 'scope', version: undefined });
   });
 
-  test('parses scoped package name with version', () => {
+  test('parses @scope/name with version (strips @ for npm compat)', () => {
     const result = parseInstallSpec('@scope/name@2.0.0');
-    expect(result).toEqual({ type: 'registry', name: '@scope/name', version: '2.0.0' });
+    expect(result).toEqual({ type: 'registry', name: 'name', publisher: 'scope', version: '2.0.0' });
   });
 
   test('parses github spec', () => {
@@ -56,6 +66,11 @@ describe('parseInstallSpec', () => {
 
   test('parses hash spec', () => {
     const result = parseInstallSpec('hash:SHjKBCXHOfpCf37aIP6EX2suRrpf4qFN9bHjL1BgMhU=');
+    expect(result).toEqual({ type: 'hash', hash: 'SHjKBCXHOfpCf37aIP6EX2suRrpf4qFN9bHjL1BgMhU=' });
+  });
+
+  test('parses blake3 spec (alias for hash)', () => {
+    const result = parseInstallSpec('blake3:SHjKBCXHOfpCf37aIP6EX2suRrpf4qFN9bHjL1BgMhU=');
     expect(result).toEqual({ type: 'hash', hash: 'SHjKBCXHOfpCf37aIP6EX2suRrpf4qFN9bHjL1BgMhU=' });
   });
 
