@@ -220,21 +220,22 @@ export async function publishAspect(aspect: Aspect): Promise<ApiPublishResponse>
 }
 
 /**
- * POST /aspects/anonymous — Publish anonymously by hash (no auth)
+ * POST /aspects/blob — Publish anonymously by hash (no auth)
+ * Content-addressable storage: same content = same hash, idempotent
  */
 export async function publishAnonymous(aspect: Aspect): Promise<ApiAnonymousPublishResponse> {
-  return apiFetch<ApiAnonymousPublishResponse>('/aspects/anonymous', {
+  return apiFetch<ApiAnonymousPublishResponse>('/aspects/blob', {
     method: 'POST',
-    body: { aspect },
+    body: aspect,
     auth: false,
   });
 }
 
 /**
- * GET /aspects/by-hash/:hash — Fetch aspect by blake3 hash (no auth)
+ * GET /aspects/blob/:hash — Fetch aspect by blake3 hash (no auth)
  */
 export async function getAspectByHash(hash: string): Promise<ApiVersionContent> {
-  return apiFetch<ApiVersionContent>(`/aspects/by-hash/${encodeURIComponent(hash)}`);
+  return apiFetch<ApiVersionContent>(`/aspects/blob/${encodeURIComponent(hash)}`);
 }
 
 /**
