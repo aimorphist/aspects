@@ -120,7 +120,7 @@ async function installFromRegistryApi(
   await writeFile(join(aspectDir, ASPECT_FILENAME), content);
 
   // Update config
-  const hash = versionData.blake3 || await blake3Hash(content);
+  const hash = versionData.blake3 || blake3Hash(content);
   await addInstalledAspect(name, {
     version: aspect.version,
     source: 'registry',
@@ -216,7 +216,7 @@ async function installFromRegistryLegacy(
   await writeFile(join(aspectDir, ASPECT_FILENAME), content);
 
   // Update config
-  const hash = await blake3Hash(content);
+  const hash = blake3Hash(content);
   await addInstalledAspect(name, {
     version: aspect.version,
     source: 'registry',
@@ -283,7 +283,7 @@ async function installFromGitHub(
     const existing = await getInstalledAspect(aspect.name, scope, projectRoot);
     if (existing && existing.source === 'github' && existing.githubRef === targetRef) {
       const existingAspect = await loadAspectFromPath(getAspectPath(aspect.name, scope, projectRoot));
-      if (existingAspect && existing.blake3 === await blake3Hash(content)) {
+      if (existingAspect && existing.blake3 === blake3Hash(content)) {
         return { success: true, aspect: existingAspect, source: 'github', alreadyInstalled: true };
       }
     }
@@ -296,7 +296,7 @@ async function installFromGitHub(
   await writeFile(join(aspectDir, ASPECT_FILENAME), content);
 
   // Update config
-  const hash = await blake3Hash(content);
+  const hash = blake3Hash(content);
   await addInstalledAspect(aspect.name, {
     version: aspect.version,
     source: 'github',
@@ -353,7 +353,7 @@ async function installFromLocal(
 
   // Read content for hash
   const content = await readFile(filePath, 'utf-8');
-  const hash = await blake3Hash(content);
+  const hash = blake3Hash(content);
 
   const scope = options?.scope ?? 'global';
   const projectRoot = options?.projectRoot;
@@ -425,7 +425,7 @@ async function installFromHash(
     version: aspect.version,
     source: 'registry',
     installedAt: new Date().toISOString(),
-    blake3: versionData.blake3 || await blake3Hash(content),
+    blake3: versionData.blake3 || blake3Hash(content),
   }, scope, projectRoot);
 
   return { success: true, aspect, source: 'registry' };

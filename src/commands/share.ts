@@ -2,7 +2,7 @@ import { stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { defineCommand } from 'citty';
 import * as p from '@clack/prompts';
-import { blake3Hash } from '../utils/hash';
+import { blake3HashAspect, canonicalizeAspect } from '../utils/hash';
 import { listInstalledAspects } from '../lib/config';
 import { loadInstalledAspect } from '../lib/aspect-loader';
 import { parseAspectFile } from '../lib/parser';
@@ -97,8 +97,8 @@ export default defineCommand({
       aspect = loaded;
     }
 
-    // Serialize for hashing and size check
-    const content = JSON.stringify(aspect, null, 2);
+    // Serialize for hashing and size check (canonicalized JSON matches server)
+    const content = canonicalizeAspect(aspect);
     const sizeBytes = Buffer.byteLength(content);
 
     if (sizeBytes > MAX_ASPECT_SIZE) {
@@ -106,8 +106,8 @@ export default defineCommand({
       process.exit(1);
     }
 
-    // Compute hash
-    const hash = await blake3Hash(content);
+    // Compute hash (uses same canonicalization as server)
+    const hash = blake3HashAspect(aspect);
 
     // Show preview
     console.log();
@@ -135,13 +135,22 @@ export default defineCommand({
       const response = await publishAnonymous(aspect);
       spinner.stop('Uploaded');
 
+      // Warn if client/server hashes diverge (server is authoritative)
+      if (response.blake3 !== hash) {
+        p.log.warn('Hash mismatch: client and server computed different hashes.');
+        console.log(`  ${c.muted('Client:')} ${hash}`);
+        console.log(`  ${c.muted('Server:')} ${response.blake3}`);
+        console.log(`  ${c.muted('Using server hash (authoritative).')}`);
+        console.log();
+      }
+
       console.log();
       console.log(`${icons.success} ${c.bold('Shared successfully!')}`);
       console.log();
-      console.log(`  ${c.label('Hash')}    ${response.hash}`);
-      console.log(`  ${c.label('Install')} ${c.highlight(`aspects add hash:${response.hash}`)}`);
-      if (response.expiresAt) {
-        console.log(`  ${c.label('Expires')} ${new Date(response.expiresAt).toLocaleDateString()}`);
+      console.log(`  ${c.label('Hash')}    ${response.blake3}`);
+      console.log(`  ${c.label('Install')} ${c.highlight(`aspects add blake3:${response.blake3}`)}`);
+      if (response.existing) {
+        console.log(`  ${c.muted('(Already existed on registry)')}`);
       }
       console.log();
 

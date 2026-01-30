@@ -2,6 +2,15 @@
 
 > Migrate the aspects CLI from static GitHub-based registry to the REST API backend at localhost:5173/api/v1, implementing all commands including full device auth flow.
 
+## ✅ STATUS: COMPLETE (2026-01-29)
+
+All 12 work items implemented. All 10 success criteria verified. 59/59 tests passing.
+
+**Additional features implemented via Blake3 plan:**
+- `share` command (anonymous hash publishing)
+- `unpublish` command (originally deferred, now complete)
+- Hash-based install (`hash:` prefix)
+
 ---
 
 ## Decisions
@@ -283,13 +292,13 @@ Phases B and C items within each phase can be parallelized where noted as "stand
 
 ## Success Criteria
 
-- [ ] `aspects install alaric` fetches from REST API at localhost:5173
-- [ ] `aspects search wizard` performs server-side search with category/trust filters
-- [ ] `aspects login` completes device authorization flow
-- [ ] `aspects logout` clears stored tokens
-- [ ] `aspects publish` sends aspect to API with auth token
-- [ ] `aspects publish --dry-run` validates without publishing
-- [ ] `aspects info alaric` shows remote details when not installed locally
-- [ ] All existing locally-installed aspects (with aspect.yaml) continue to load
-- [ ] New installs create aspect.json files
-- [ ] Network failures fall back gracefully with helpful error messages
+- [x] `aspects install alaric` fetches from REST API at localhost:5173
+- [x] `aspects search wizard` performs server-side search with category/trust filters
+- [x] `aspects login` completes device authorization flow
+- [x] `aspects logout` clears stored tokens
+- [x] `aspects publish` sends aspect to API with auth token
+- [x] `aspects publish --dry-run` validates without publishing
+- [x] `aspects info alaric` shows remote details when not installed locally
+- [x] All existing locally-installed aspects (with aspect.yaml) continue to load
+- [x] New installs create aspect.json files
+- [x] Network failures fall back gracefully with helpful error messages
