@@ -2,6 +2,9 @@
 import { defineCommand, runMain, type CommandDef } from "citty";
 import pc from "picocolors";
 import { morphistBanner } from "../scripts/lib/output";
+import pkg from "../package.json";
+
+const VERSION = pkg.version;
 
 import create from "./commands/create";
 import add from "./commands/add";
@@ -85,7 +88,7 @@ const COMMANDS: Array<{
 // Custom help renderer
 function showCustomHelp() {
   morphistBanner();
-  console.log(pc.dim(`Package manager for AI personality aspects (v0.1.0)`));
+  console.log(pc.dim(`Package manager for AI personality aspects (v${VERSION})`));
   console.log();
   console.log(`${pc.bold(pc.underline("USAGE"))} ${pc.cyan("aspects")} ${pc.dim("<command>")} ${pc.dim("[options]")}`);
   console.log();
@@ -166,7 +169,7 @@ for (const { name, cmd } of COMMANDS) {
 const main = defineCommand({
   meta: {
     name: "aspects",
-    version: "0.1.0",
+    version: VERSION,
     description: "Package manager for AI personality aspects",
   },
   subCommands,
