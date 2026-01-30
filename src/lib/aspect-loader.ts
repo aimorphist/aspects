@@ -1,5 +1,5 @@
 import { join } from 'node:path';
-import { getAspectPath } from '../utils/paths';
+import { getAspectPath, type InstallScope } from '../utils/paths';
 import { getInstalledAspect } from './config';
 import { parseAspectFile } from './parser';
 import type { Aspect } from './types';
@@ -11,12 +11,16 @@ const LEGACY_FILENAME = 'aspect.yaml';
  * Load an installed aspect by name.
  * Tries aspect.json first, falls back to aspect.yaml for backwards compat.
  */
-export async function loadInstalledAspect(name: string): Promise<Aspect | null> {
-  const installed = await getInstalledAspect(name);
+export async function loadInstalledAspect(
+  name: string,
+  scope: InstallScope = 'global',
+  projectRoot?: string,
+): Promise<Aspect | null> {
+  const installed = await getInstalledAspect(name, scope, projectRoot);
   if (!installed) return null;
 
   // Use custom path for local installs, otherwise standard path
-  const aspectDir = installed.path ?? getAspectPath(name);
+  const aspectDir = installed.path ?? getAspectPath(name, scope, projectRoot);
 
   // Try aspect.json first
   const jsonResult = await parseAspectFile(join(aspectDir, ASPECT_FILENAME));

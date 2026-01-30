@@ -2,6 +2,7 @@ import { defineCommand } from "citty";
 import { parseInstallSpec } from "../lib/resolver";
 import { installAspect } from "../lib/installer";
 import { c, icons } from "../utils/colors";
+import { findProjectRoot, getDefaultScope, type InstallScope } from "../utils/paths";
 
 export default defineCommand({
   meta: {
@@ -18,9 +19,30 @@ export default defineCommand({
       type: "boolean",
       description: "Overwrite existing installation",
     },
+    global: {
+      type: "boolean",
+      alias: "g",
+      description: "Install to global scope (~/.aspects) instead of project",
+    },
   },
   async run({ args }) {
     const specs = Array.isArray(args.specs) ? args.specs : [args.specs];
+
+    // Determine scope
+    let scope: InstallScope;
+    let projectRoot: string | undefined;
+
+    if (args.global) {
+      scope = 'global';
+    } else {
+      projectRoot = await findProjectRoot() || undefined;
+      scope = projectRoot ? 'project' : 'global';
+    }
+
+    // Show scope info
+    const scopeLabel = scope === 'global' ? '~/.aspects' : './.aspects';
+    console.log();
+    console.log(c.muted(`Installing to ${scopeLabel}`));
 
     const results: Array<{
       spec: string;
@@ -40,7 +62,7 @@ export default defineCommand({
         continue;
       }
 
-      const result = await installAspect(spec, { force: !!args.force });
+      const result = await installAspect(spec, { force: !!args.force, scope, projectRoot });
 
       if (!result.success) {
         results.push({ spec: specStr, success: false, error: result.error });

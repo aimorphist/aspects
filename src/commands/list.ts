@@ -1,16 +1,37 @@
 import { defineCommand } from 'citty';
-import { listInstalledAspects } from '../lib/config';
+import { listInstalledAspects, listAllInstalledAspects } from '../lib/config';
 import { loadInstalledAspect } from '../lib/aspect-loader';
 import { c, icons } from '../utils/colors';
+import { findProjectRoot, type InstallScope } from '../utils/paths';
 
 export default defineCommand({
   meta: {
     name: 'list',
     description: 'List installed aspects',
   },
-  args: {},
-  async run() {
-    const installed = await listInstalledAspects();
+  args: {
+    global: {
+      type: 'boolean',
+      alias: 'g',
+      description: 'List only global aspects (~/.aspects)',
+    },
+    project: {
+      type: 'boolean',
+      alias: 'p',
+      description: 'List only project aspects (./.aspects)',
+    },
+  },
+  async run({ args }) {
+    const projectRoot = await findProjectRoot() || undefined;
+    
+    let installed;
+    if (args.global) {
+      installed = await listInstalledAspects('global');
+    } else if (args.project) {
+      installed = await listInstalledAspects('project', projectRoot);
+    } else {
+      installed = await listAllInstalledAspects(projectRoot);
+    }
 
     if (installed.length === 0) {
       console.log();
@@ -24,19 +45,20 @@ export default defineCommand({
     console.log(c.bold(`${icons.package} Installed aspects`));
     console.log();
 
-    for (const installed of await listInstalledAspects()) {
-      const aspect = await loadInstalledAspect(installed.name);
-      const sourceLabel = installed.source === 'local' 
+    for (const item of installed) {
+      const aspect = await loadInstalledAspect(item.name, item.scope, projectRoot);
+      const scopeLabel = item.scope === 'project' ? c.dim(' [project]') : c.dim(' [global]');
+      const sourceLabel = item.source === 'local' 
         ? c.dim(' (local)') 
-        : installed.source === 'github' 
+        : item.source === 'github' 
         ? c.dim(' (github)') 
         : '';
       
-      const name = c.aspect(installed.name);
-      const version = c.version(`@${installed.version}`);
+      const name = c.aspect(item.name);
+      const version = c.version(`@${item.version}`);
       const tagline = aspect?.tagline ? c.muted(` — ${aspect.tagline}`) : '';
       
-      console.log(`  ${name}${version}${sourceLabel}${tagline}`);
+      console.log(`  ${name}${version}${scopeLabel}${sourceLabel}${tagline}`);
     }
 
     console.log();

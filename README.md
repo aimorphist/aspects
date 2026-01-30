@@ -1,10 +1,10 @@
 ```text
-   █████╗  ███████╗██████╗ ███████╗ ██████╗████████╗███████╗
-  ██╔══██╗ ██╔════╝██╔══██╗██╔════╝██╔════╝╚══██╔══╝██╔════╝
-  ███████║ ███████╗██████╔╝█████╗  ██║        ██║   ███████╗
-  ██╔══██║ ╚════██║██╔═══╝ ██╔══╝  ██║        ██║   ╚════██║
-  ██║  ██║ ███████║██║     ███████╗╚██████╗   ██║   ███████║
-  ╚═╝  ╚═╝ ╚══════╝╚═╝     ╚══════╝ ╚═════╝   ╚═╝   ╚══════╝
+   █████╗ ███████╗██████╗ ███████╗ ██████╗████████╗███████╗
+  ██╔══██╗██╔════╝██╔══██╗██╔════╝██╔════╝╚══██╔══╝██╔════╝
+  ███████║███████╗██████╔╝█████╗  ██║        ██║   ███████╗
+  ██╔══██║╚════██║██╔═══╝ ██╔══╝  ██║        ██║   ╚════██║
+  ██║  ██║███████║██║     ███████╗╚██████╗   ██║   ███████║
+  ╚═╝  ╚═╝╚══════╝╚═╝     ╚══════╝ ╚═════╝   ╚═╝   ╚══════╝
 ```
 
 > **Community Aspects Registry** — Personality modules for AI agents.
@@ -26,12 +26,39 @@ Each aspect is a JSON file containing:
 
 ## Quick Start
 
-Browse and install aspects directly in the [Morphist app](https://morphist.ai):
+```bash
+npx @morphist/aspects add alaric
+```
 
-1. Open the **Aspects** tab in settings
-2. Browse community aspects
-3. Tap **Install** on any aspect you like
-4. Switch between aspects anytime
+That's it. The aspect is now installed to your project.
+
+```bash
+# Search the registry
+npx @morphist/aspects search wizard
+
+# Create a new aspect
+npx @morphist/aspects create
+
+# List installed aspects
+npx @morphist/aspects list
+```
+
+### Installation Scope
+
+| Flag | Scope | Location |
+|------|-------|----------|
+| (default) | Project | `./.aspects/` |
+| `-g` | Global | `~/.aspects/` |
+
+```bash
+# Install to project (default if .aspects/ exists)
+npx @morphist/aspects add alaric
+
+# Install globally
+npx @morphist/aspects add -g alaric
+```
+
+See [CLI Documentation](./docs/CLI.md) for full reference.
 
 ## Registry Structure
 
@@ -149,7 +176,7 @@ The standard way to contribute:
 
    ```bash
    # With CLI (recommended)
-   npx @aspect/cli create
+   npx @morphist/aspects create
 
    # Or manually create the files:
    mkdir -p registry/aspects/my-aspect
@@ -254,48 +281,35 @@ console.log(aspect.voiceHints); // Voice configuration
 The Aspects CLI helps you create and manage aspects.
 
 ```bash
-# Install (npm coming soon, for now clone the repo)
-git clone https://github.com/aimorphist/aspects
-cd aspects && bun install
+# Install globally
+npm install -g @morphist/aspects
 
-# Create a new aspect
-bun run dev create
-
-# Install aspects
-bun run dev add alaric gandalf
-
-# Search
-bun run dev search wizard
-
-# Publish to registry
-bun run dev publish
+# Or use directly with npx
+npx @morphist/aspects <command>
 ```
 
 ### Commands
 
-| Command    | Description               |
-| ---------- | ------------------------- |
-| `create`   | Interactive aspect wizard |
-| `add`      | Install aspects           |
-| `list`     | List installed aspects    |
-| `search`   | Search registry           |
-| `info`     | Show aspect details       |
-| `remove`   | Uninstall aspect          |
-| `validate` | Validate aspect.json      |
-| `publish`  | Submit to registry        |
+| Command    | Aliases | Description               |
+| ---------- | ------- | ------------------------- |
+| `create`   | `c`, `new`, `n` | Interactive aspect wizard |
+| `add`      | `install`, `i`, `a` | Install aspects           |
+| `list`     | `ls` | List installed aspects    |
+| `search`   | | Search registry           |
+| `info`     | | Show aspect details       |
+| `remove`   | `rm` | Uninstall aspect          |
+| `validate` | | Validate aspect.json      |
+| `publish`  | | Submit to registry        |
+| `login`    | | Authenticate with registry |
+
+### Options
+
+| Flag | Description |
+|------|-------------|
+| `-g, --global` | Use global scope (~/.aspects) |
+| `--force` | Overwrite existing installation |
 
 See [CLI Documentation](./docs/CLI.md) for full reference.
-
-### Roadmap
-
-Planned features:
-
-- **`find`** — Advanced search with boolean operators (`-n wizard --not -t evil`)
-- **`edit`** — Edit existing aspects with prepopulated wizard
-- **`set`** — Manage collections of aspects
-- **`generate`** — AI-powered aspect creation
-
-See [CLI Roadmap](./docs/CLI-ROADMAP.md) for details.
 
 ## Development
 
@@ -322,3 +336,14 @@ bun run scan
 ## License
 
 MIT © [Aspects](https://aspects.sh)
+
+---
+
+## Morphist App
+
+Browse and install aspects directly in the [Morphist app](https://morphist.ai):
+
+1. Open the **Aspects** tab in settings
+2. Browse community aspects
+3. Tap **Install** on any aspect you like
+4. Switch between aspects anytime

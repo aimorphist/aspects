@@ -1,5 +1,5 @@
 import { readFile, writeFile } from "node:fs/promises";
-import { CONFIG_PATH, ensureAspectsDir } from "../utils/paths";
+import { CONFIG_PATH, ensureAspectsDir, getConfigPath, type InstallScope } from "../utils/paths";
 import type { AspectsConfig, AuthTokens } from "./types";
 
 const DEFAULT_REGISTRY_API_URL = "https://aspects.sh/api/v1";
@@ -31,16 +31,17 @@ export function createDefaultConfig(): AspectsConfig {
 /**
  * Read the config file. Creates default if doesn't exist.
  */
-export async function readConfig(): Promise<AspectsConfig> {
-  await ensureAspectsDir();
+export async function readConfig(scope: InstallScope = 'global', projectRoot?: string): Promise<AspectsConfig> {
+  await ensureAspectsDir(scope, projectRoot);
+  const configPath = scope === 'global' ? CONFIG_PATH : getConfigPath(scope, projectRoot);
 
   try {
-    const content = await readFile(CONFIG_PATH, "utf-8");
+    const content = await readFile(configPath, "utf-8");
     return JSON.parse(content) as AspectsConfig;
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === "ENOENT") {
       const config = createDefaultConfig();
-      await writeConfig(config);
+      await writeConfig(config, scope, projectRoot);
       return config;
     }
     throw err;
@@ -50,9 +51,10 @@ export async function readConfig(): Promise<AspectsConfig> {
 /**
  * Write the config file.
  */
-export async function writeConfig(config: AspectsConfig): Promise<void> {
-  await ensureAspectsDir();
-  await writeFile(CONFIG_PATH, JSON.stringify(config, null, 2) + "\n");
+export async function writeConfig(config: AspectsConfig, scope: InstallScope = 'global', projectRoot?: string): Promise<void> {
+  await ensureAspectsDir(scope, projectRoot);
+  const configPath = scope === 'global' ? CONFIG_PATH : getConfigPath(scope, projectRoot);
+  await writeFile(configPath, JSON.stringify(config, null, 2) + "\n");
 }
 
 /**
@@ -61,22 +63,24 @@ export async function writeConfig(config: AspectsConfig): Promise<void> {
 export async function addInstalledAspect(
   name: string,
   info: AspectsConfig["installed"][string],
+  scope: InstallScope = 'global',
+  projectRoot?: string,
 ): Promise<void> {
-  const config = await readConfig();
+  const config = await readConfig(scope, projectRoot);
   config.installed[name] = info;
-  await writeConfig(config);
+  await writeConfig(config, scope, projectRoot);
 }
 
 /**
  * Remove an installed aspect from the config.
  */
-export async function removeInstalledAspect(name: string): Promise<boolean> {
-  const config = await readConfig();
+export async function removeInstalledAspect(name: string, scope: InstallScope = 'global', projectRoot?: string): Promise<boolean> {
+  const config = await readConfig(scope, projectRoot);
   if (!(name in config.installed)) {
     return false;
   }
   delete config.installed[name];
-  await writeConfig(config);
+  await writeConfig(config, scope, projectRoot);
   return true;
 }
 
@@ -85,22 +89,40 @@ export async function removeInstalledAspect(name: string): Promise<boolean> {
  */
 export async function getInstalledAspect(
   name: string,
+  scope: InstallScope = 'global',
+  projectRoot?: string,
 ): Promise<AspectsConfig["installed"][string] | null> {
-  const config = await readConfig();
+  const config = await readConfig(scope, projectRoot);
   return config.installed[name] ?? null;
 }
 
 /**
  * List all installed aspects.
  */
-export async function listInstalledAspects(): Promise<
-  Array<{ name: string } & AspectsConfig["installed"][string]>
+export async function listInstalledAspects(scope: InstallScope = 'global', projectRoot?: string): Promise<
+  Array<{ name: string; scope: InstallScope } & AspectsConfig["installed"][string]>
 > {
-  const config = await readConfig();
+  const config = await readConfig(scope, projectRoot);
   return Object.entries(config.installed).map(([name, info]) => ({
     name,
+    scope,
     ...info,
   }));
+}
+
+/**
+ * List all installed aspects from both scopes.
+ */
+export async function listAllInstalledAspects(projectRoot?: string): Promise<
+  Array<{ name: string; scope: InstallScope } & AspectsConfig["installed"][string]>
+> {
+  const globalAspects = await listInstalledAspects('global');
+  try {
+    const projectAspects = await listInstalledAspects('project', projectRoot);
+    return [...projectAspects, ...globalAspects];
+  } catch {
+    return globalAspects;
+  }
 }
 
 // --- Auth helpers ---

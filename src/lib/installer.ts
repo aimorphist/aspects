@@ -5,12 +5,18 @@ import type { InstallSpec, Aspect } from './types';
 import { parseAspectJson, parseAspectFile } from './parser';
 import { getRegistryAspect, fetchAspectVersion, fetchAspectByHash } from './registry';
 import { addInstalledAspect, getInstalledAspect } from './config';
-import { getAspectPath, ensureAspectsDir } from '../utils/paths';
+import { getAspectPath, ensureAspectsDir, type InstallScope } from '../utils/paths';
 import { blake3Hash } from '../utils/hash';
 import { log } from '../utils/logger';
 
 const ASPECT_FILENAME = 'aspect.json';
 const LEGACY_FILENAME = 'aspect.yaml';
+
+export interface InstallOptions {
+  force?: boolean;
+  scope?: InstallScope;
+  projectRoot?: string;
+}
 
 export type InstallResult =
   | {
@@ -29,7 +35,7 @@ export type InstallResult =
  */
 export async function installAspect(
   spec: InstallSpec,
-  options?: { force?: boolean },
+  options?: InstallOptions,
 ): Promise<InstallResult> {
   switch (spec.type) {
     case 'registry':
@@ -49,7 +55,7 @@ export async function installAspect(
 async function installFromRegistry(
   name: string,
   version?: string,
-  options?: { force?: boolean },
+  options?: InstallOptions,
 ): Promise<InstallResult> {
   // Try API-based install first
   try {
@@ -66,15 +72,17 @@ async function installFromRegistry(
 async function installFromRegistryApi(
   name: string,
   version?: string,
-  options?: { force?: boolean },
+  options?: InstallOptions,
 ): Promise<InstallResult> {
   const targetVersion = version ?? 'latest';
+  const scope = options?.scope ?? 'global';
+  const projectRoot = options?.projectRoot;
 
   // Check if already installed (unless force)
   if (!options?.force) {
-    const existing = await getInstalledAspect(name);
+    const existing = await getInstalledAspect(name, scope, projectRoot);
     if (existing && (version ? existing.version === version : true)) {
-      const aspect = await loadAspectFromPath(getAspectPath(name));
+      const aspect = await loadAspectFromPath(getAspectPath(name, scope, projectRoot));
       if (aspect) {
         return { success: true, aspect, source: 'registry', alreadyInstalled: true };
       }
@@ -104,9 +112,9 @@ async function installFromRegistryApi(
     };
   }
 
-  // Store to ~/.aspects/aspects/<name>/
-  await ensureAspectsDir();
-  const aspectDir = getAspectPath(name);
+  // Store to aspects directory
+  await ensureAspectsDir(scope, projectRoot);
+  const aspectDir = getAspectPath(name, scope, projectRoot);
   await mkdir(aspectDir, { recursive: true });
   const content = JSON.stringify(aspect, null, 2);
   await writeFile(join(aspectDir, ASPECT_FILENAME), content);
@@ -118,7 +126,7 @@ async function installFromRegistryApi(
     source: 'registry',
     installedAt: new Date().toISOString(),
     blake3: hash,
-  });
+  }, scope, projectRoot);
 
   return { success: true, aspect, source: 'registry' };
 }
@@ -129,8 +137,11 @@ async function installFromRegistryApi(
 async function installFromRegistryLegacy(
   name: string,
   version?: string,
-  options?: { force?: boolean },
+  options?: InstallOptions,
 ): Promise<InstallResult> {
+  const scope = options?.scope ?? 'global';
+  const projectRoot = options?.projectRoot;
+
   let registryAspect;
   try {
     registryAspect = await getRegistryAspect(name);
@@ -157,9 +168,9 @@ async function installFromRegistryLegacy(
 
   // Check if already installed at same version (unless force)
   if (!options?.force) {
-    const existing = await getInstalledAspect(name);
+    const existing = await getInstalledAspect(name, scope, projectRoot);
     if (existing && existing.version === targetVersion) {
-      const aspect = await loadAspectFromPath(getAspectPath(name));
+      const aspect = await loadAspectFromPath(getAspectPath(name, scope, projectRoot));
       if (aspect) {
         return { success: true, aspect, source: 'registry', alreadyInstalled: true };
       }
@@ -198,9 +209,9 @@ async function installFromRegistryLegacy(
     };
   }
 
-  // Store to ~/.aspects/aspects/<name>/
-  await ensureAspectsDir();
-  const aspectDir = getAspectPath(name);
+  // Store to aspects directory
+  await ensureAspectsDir(scope, projectRoot);
+  const aspectDir = getAspectPath(name, scope, projectRoot);
   await mkdir(aspectDir, { recursive: true });
   await writeFile(join(aspectDir, ASPECT_FILENAME), content);
 
@@ -211,7 +222,7 @@ async function installFromRegistryLegacy(
     source: 'registry',
     installedAt: new Date().toISOString(),
     blake3: hash,
-  });
+  }, scope, projectRoot);
 
   return { success: true, aspect, source: 'registry' };
 }
@@ -226,9 +237,11 @@ async function installFromGitHub(
   owner: string,
   repo: string,
   ref?: string,
-  options?: { force?: boolean },
+  options?: InstallOptions,
 ): Promise<InstallResult> {
   const targetRef = ref ?? DEFAULT_GITHUB_REF;
+  const scope = options?.scope ?? 'global';
+  const projectRoot = options?.projectRoot;
 
   // Try aspect.json first, then aspect.yaml
   let content: string | null = null;
@@ -267,18 +280,18 @@ async function installFromGitHub(
 
   // Check if already installed at same ref (unless force)
   if (!options?.force) {
-    const existing = await getInstalledAspect(aspect.name);
+    const existing = await getInstalledAspect(aspect.name, scope, projectRoot);
     if (existing && existing.source === 'github' && existing.githubRef === targetRef) {
-      const existingAspect = await loadAspectFromPath(getAspectPath(aspect.name));
+      const existingAspect = await loadAspectFromPath(getAspectPath(aspect.name, scope, projectRoot));
       if (existingAspect && existing.blake3 === await blake3Hash(content)) {
         return { success: true, aspect: existingAspect, source: 'github', alreadyInstalled: true };
       }
     }
   }
 
-  // Store to ~/.aspects/aspects/<name>/
-  await ensureAspectsDir();
-  const aspectDir = getAspectPath(aspect.name);
+  // Store to aspects directory
+  await ensureAspectsDir(scope, projectRoot);
+  const aspectDir = getAspectPath(aspect.name, scope, projectRoot);
   await mkdir(aspectDir, { recursive: true });
   await writeFile(join(aspectDir, ASPECT_FILENAME), content);
 
@@ -290,7 +303,7 @@ async function installFromGitHub(
     installedAt: new Date().toISOString(),
     blake3: hash,
     githubRef: targetRef,
-  });
+  }, scope, projectRoot);
 
   return { success: true, aspect, source: 'github' };
 }
@@ -300,7 +313,7 @@ async function installFromGitHub(
  */
 async function installFromLocal(
   path: string,
-  options?: { force?: boolean },
+  options?: InstallOptions,
 ): Promise<InstallResult> {
   let filePath: string;
   let aspectDir: string;
@@ -342,9 +355,12 @@ async function installFromLocal(
   const content = await readFile(filePath, 'utf-8');
   const hash = await blake3Hash(content);
 
+  const scope = options?.scope ?? 'global';
+  const projectRoot = options?.projectRoot;
+
   // Check if already installed from same path (unless force)
   if (!options?.force) {
-    const existing = await getInstalledAspect(aspect.name);
+    const existing = await getInstalledAspect(aspect.name, scope, projectRoot);
     if (existing && existing.path === aspectDir && existing.blake3 === hash) {
       return { success: true, aspect, source: 'local', alreadyInstalled: true };
     }
@@ -357,7 +373,7 @@ async function installFromLocal(
     installedAt: new Date().toISOString(),
     blake3: hash,
     path: aspectDir,
-  });
+  }, scope, projectRoot);
 
   return { success: true, aspect, source: 'local' };
 }
@@ -367,8 +383,11 @@ async function installFromLocal(
  */
 async function installFromHash(
   hash: string,
-  options?: { force?: boolean },
+  options?: InstallOptions,
 ): Promise<InstallResult> {
+  const scope = options?.scope ?? 'global';
+  const projectRoot = options?.projectRoot;
+
   log.start(`Fetching aspect by hash ${hash.slice(0, 12)}...`);
 
   let versionData;
@@ -386,18 +405,18 @@ async function installFromHash(
 
   // Check if already installed (unless force)
   if (!options?.force) {
-    const existing = await getInstalledAspect(aspect.name);
+    const existing = await getInstalledAspect(aspect.name, scope, projectRoot);
     if (existing && existing.blake3 === hash) {
-      const existingAspect = await loadAspectFromPath(getAspectPath(aspect.name));
+      const existingAspect = await loadAspectFromPath(getAspectPath(aspect.name, scope, projectRoot));
       if (existingAspect) {
         return { success: true, aspect: existingAspect, source: 'registry', alreadyInstalled: true };
       }
     }
   }
 
-  // Store to ~/.aspects/aspects/<name>/
-  await ensureAspectsDir();
-  const aspectDir = getAspectPath(aspect.name);
+  // Store to aspects directory
+  await ensureAspectsDir(scope, projectRoot);
+  const aspectDir = getAspectPath(aspect.name, scope, projectRoot);
   await mkdir(aspectDir, { recursive: true });
   const content = JSON.stringify(aspect, null, 2);
   await writeFile(join(aspectDir, ASPECT_FILENAME), content);
@@ -407,7 +426,7 @@ async function installFromHash(
     source: 'registry',
     installedAt: new Date().toISOString(),
     blake3: versionData.blake3 || await blake3Hash(content),
-  });
+  }, scope, projectRoot);
 
   return { success: true, aspect, source: 'registry' };
 }
