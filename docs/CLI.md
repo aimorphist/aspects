@@ -1,6 +1,6 @@
 # Aspects CLI
 
-> Package manager for AI personality aspects — like npm for agent personas.
+> Package manager for AI personality aspects - like npm for agent personas.
 
 ## Installation
 
@@ -19,10 +19,10 @@ bun add -g aspects
 
 ```bash
 # Create a new aspect
-aspects create my-wizard
+aspects create my-aspect
 
 # Edit the generated aspect.json
-code ./my-wizard/aspect.json
+code ./my-aspect/aspect.json
 
 # Add aspects to your local bundle
 aspects add alaric meditation-guide
@@ -42,7 +42,7 @@ Create a new aspect interactively.
 
 ```bash
 aspects create                    # Create in current directory
-aspects create my-wizard          # Create in ./my-wizard/
+aspects create my-aspect          # Create in ./my-aspect/
 aspects n ~/aspects/healer        # Create at specific path (using alias)
 ```
 
@@ -50,8 +50,8 @@ aspects n ~/aspects/healer        # Create at specific path (using alias)
 
 ```
 ✨ Create a new aspect
-? Aspect name (slug) › my-wizard
-? Display name › My Wizard
+? Aspect name (slug) › my-aspect
+? Display name › My Aspect
 ? Tagline › A wise mentor who speaks in riddles
 ? Author › Jane Doe
 ? License › MIT
@@ -60,7 +60,7 @@ aspects n ~/aspects/healer        # Create at specific path (using alias)
 ? Add behavioral directives? › yes
 ? Keep responses brief by default? › yes
 ? Stay in character? › yes
-✓ Created ./my-wizard/aspect.json
+✓ Created ./my-aspect/aspect.json
 ```
 
 **Output:** Creates an `aspect.json` file with your configuration.
@@ -87,7 +87,7 @@ aspects add alaric meditation-guide sherlock
 aspects add github:jane/meditation-guide
 
 # From local path
-aspects add ./my-wizard
+aspects add ./my-aspect
 ```
 
 **Where aspects are stored:** `~/.aspects/aspects/<name>/aspect.json`
@@ -121,9 +121,9 @@ aspects list
     Calm guide for mindfulness and meditation
     Source: github:jane/meditation-guide
 
-  my-wizard@0.1.0
+  my-aspect@0.1.0
     A wise mentor who speaks in riddles
-    Source: local (./my-wizard)
+    Source: local (./my-aspect)
 ```
 
 ---
@@ -323,7 +323,7 @@ Manage aspect sets (collections of aspects).
 Create a new set.
 
 ```bash
-# Interactive wizard
+# Interactive generator
 aspects set create my-favorites
 
 # With aspects
@@ -438,14 +438,14 @@ Current values shown as defaults. Press Enter to keep.
 Remove an installed aspect.
 
 ```bash
-aspects remove my-wizard
+aspects remove my-aspect
 ```
 
 **Output:**
 
 ```
-? Remove my-wizard@0.1.0? › yes
-✓ Removed my-wizard@0.1.0
+? Remove my-aspect@0.1.0? › yes
+✓ Removed my-aspect@0.1.0
 ```
 
 ---
@@ -479,15 +479,15 @@ aspects update --check      # Check for updates without installing
 Validate an aspect.yaml file against the schema.
 
 ```bash
-aspects validate ./my-wizard
-aspects validate ./my-wizard --strict   # Stricter checks
+aspects validate ./my-aspect
+aspects validate ./my-aspect --strict   # Stricter checks
 ```
 
 **Output (success):**
 
 ```
 ✓ Valid aspect.yaml (schema v2)
-  Name:     my-wizard
+  Name:     my-aspect
   Version:  1.0.0
 
   Checks passed:
@@ -561,7 +561,7 @@ Publish an aspect to the registry or GitHub.
 
 ```bash
 aspects publish                           # Interactive
-aspects publish --github myuser/my-wizard # To your GitHub
+aspects publish --github myuser/my-aspect # To your GitHub
 aspects publish --registry                # PR to official registry
 ```
 
@@ -570,7 +570,7 @@ aspects publish --registry                # PR to official registry
 ```
 📤 Publish aspect
 
-  Name:     my-wizard@1.0.0
+  Name:     my-aspect@1.0.0
   Author:   Jane Doe
   License:  MIT
 
@@ -578,13 +578,85 @@ aspects publish --registry                # PR to official registry
   ❯ GitHub (your repository)
     Morphist Registry (creates PR)
 
-? GitHub repository › jane/my-wizard
+? GitHub repository › jane/my-aspect
 ? Create release tag? › yes (v1.0.0)
 
-✓ Published to github:jane/my-wizard@v1.0.0
+✓ Published to github:jane/my-aspect@v1.0.0
 
 Others can now install with:
-  aspects install github:jane/my-wizard
+  aspects install github:jane/my-aspect
+```
+
+---
+
+### `aspects login`
+
+Authenticate with the aspects registry using device authorization flow.
+
+```bash
+aspects login
+```
+
+**Flow:**
+
+1. CLI requests a device code from the registry
+2. Browser opens to verification URL
+3. Enter the code and authorize
+4. CLI receives access token, stored in `~/.aspects/config.json`
+
+**Benefits of logging in:**
+
+- **Name ownership** - Claim aspect names under your publisher ID
+- **Versioning** - Publish updates to your aspects
+- **Edit metadata** - Update tagline, tags, category
+
+**Output:**
+
+```
+✓ Authorized as @your-username
+  Access token stored in ~/.aspects/config.json
+```
+
+---
+
+### `aspects share <target>`
+
+Share an aspect anonymously via content hash. No account required.
+
+```bash
+aspects share my-aspect           # Share installed aspect
+aspects share ./path/to/aspect    # Share from local path
+aspects share my-aspect --dry-run # Preview hash without uploading
+```
+
+**Output:**
+
+```
+✓ Shared successfully!
+
+  Hash    7kYx3...abc
+  Install aspects add blake3:7kYx3...abc
+
+Share this hash with anyone to let them install your aspect!
+```
+
+**When to use `share` vs `publish`:**
+
+| Command | Account | Use Case |
+|---------|---------|----------|
+| `share` | Not required | Quick one-off sharing, content-addressed by hash |
+| `publish` | Required | Claim a name, publish versions, build reputation |
+
+We fully embrace anonymous contributions - `share` is a first-class citizen.
+
+---
+
+### `aspects logout`
+
+Sign out and remove stored credentials.
+
+```bash
+aspects logout
 ```
 
 ---
@@ -598,8 +670,8 @@ The `aspect.yaml` file defines your aspect. Here's the complete schema:
 schemaVersion: 2
 
 # Required: Identity
-name: my-wizard # Slug ID (lowercase, hyphens, immutable)
-displayName: My Wizard # Human-readable name
+name: my-aspect # Slug ID (lowercase, hyphens, immutable)
+displayName: My Aspect # Human-readable name
 tagline: A wise mentor # One-line description
 
 # Optional: Package metadata
@@ -660,7 +732,7 @@ resources:
 
 # Required: Core prompt
 prompt: |
-  ## Aspect: My Wizard
+  ## Aspect: My Aspect
   You are a wise mentor who guides through questions rather than answers.
 
   ### Identity
@@ -801,7 +873,7 @@ Aspects are stored in `~/.aspects/`:
     │   └── aspect.yaml
     ├── meditation-guide/
     │   └── aspect.yaml
-    └── my-wizard/
+    └── my-aspect/
         └── aspect.yaml
 ```
 
@@ -817,12 +889,12 @@ Aspects are stored in `~/.aspects/`:
       "installedAt": "2026-01-19T12:00:00Z",
       "sha256": "abc123..."
     },
-    "my-wizard": {
+    "my-aspect": {
       "version": "0.1.0",
       "source": "local",
       "installedAt": "2026-01-19T12:30:00Z",
       "sha256": "def456...",
-      "path": "/Users/jane/aspects/my-wizard"
+      "path": "/Users/jane/aspects/my-aspect"
     }
   },
   "settings": {

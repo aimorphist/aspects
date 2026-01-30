@@ -1,4 +1,5 @@
 import { defineCommand } from 'citty';
+import { exec } from 'node:child_process';
 import { log } from '../utils/logger';
 import { c, icons } from '../utils/colors';
 import { getAuth, setAuthTokens, isLoggedIn } from '../lib/config';
@@ -7,7 +8,22 @@ import { initiateDeviceAuth, pollDeviceAuth } from '../lib/api-client';
 export default defineCommand({
   meta: {
     name: 'login',
-    description: 'Authenticate with the aspects registry',
+    description: `Authenticate with the aspects registry.
+
+Uses device authorization flow (like GitHub CLI):
+  1. CLI requests a device code
+  2. Browser opens to verification URL
+  3. Enter the code and authorize
+  4. CLI receives and stores access token
+
+Benefits of logging in:
+  - Name ownership: Claim aspect names under your publisher ID
+  - Versioning: Publish updates to your aspects
+  - Edit metadata: Update tagline, tags, category
+
+Credentials stored in ~/.aspects/config.json
+
+Don't want an account? Use 'aspects share' to publish anonymously.`,
   },
   async run() {
     // Check if already logged in
@@ -41,7 +57,6 @@ export default defineCommand({
 
     // Try to open browser
     try {
-      const { exec } = await import('node:child_process');
       const platform = process.platform;
       const openCmd = platform === 'darwin' ? 'open'
         : platform === 'win32' ? 'start'
@@ -108,7 +123,7 @@ export default defineCommand({
           }
         }
       } catch (err) {
-        // Network errors during polling — keep trying
+        // Network errors during polling - keep trying
         continue;
       }
     }

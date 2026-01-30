@@ -110,7 +110,22 @@ function formatInstructionsForModel(
 export default defineCommand({
   meta: {
     name: "compile",
-    description: "Compile an aspect's prompt for a specific model",
+    description: `Compile an aspect's prompt for a specific model.
+
+Formats directives and instructions optimally for the target model:
+  - Modern models (Claude 4.x, GPT-4.1+): Clean XML tags
+  - Legacy models (Claude 3, GPT-4): Markdown with emphasis
+
+Cross-LLM Universal Pattern:
+  High-priority directives are repeated at BOTH beginning and end.
+  Claude weights prompt beginning; GPT weights prompt end.
+  This ensures critical rules work across all models.
+
+Examples:
+  aspects compile alaric -m claude-haiku-4-5
+  aspects compile alaric -m gpt-4o --mode campaign
+  aspects compile ./my-aspect -m claude-4 -o prompt.txt
+  aspects compile alaric -m claude-4 --verbose`,
   },
   args: {
     name: {

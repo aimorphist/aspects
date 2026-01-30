@@ -1,4 +1,4 @@
-# Phase 2: Local Storage — Implementation Plan
+# Phase 2: Local Storage - Implementation Plan
 
 > **Goal**: Read/write to `~/.aspects/` with working `list` command
 

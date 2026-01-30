@@ -35,6 +35,6 @@ export const icons = {
   sparkle: '✨',
   package: '📦',
   search: '🔍',
-  wizard: '🧙',
+  generator: '🧙',
   share: '🔗',
 };

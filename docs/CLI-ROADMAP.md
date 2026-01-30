@@ -102,7 +102,7 @@ aspects set edit my-favorites     # Edit a set
 
 ## Planned: `set`
 
-Manage aspect sets — named collections of aspects.
+Manage aspect sets - named collections of aspects.
 
 ### `set create`
 

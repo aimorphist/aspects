@@ -36,21 +36,21 @@ Any client consuming the Registry API can perform these core operations:
 
 This guide applies to:
 
-- **CLI tools** — Command-line interfaces for fetching and publishing
-- **Web frontends** — Dashboards for browsing, searching, and managing aspects
-- **Mobile apps** — Native applications that consume aspects
-- **Third-party integrations** — Any service that integrates with the registry
+- **CLI tools** - Command-line interfaces for fetching and publishing
+- **Web frontends** - Dashboards for browsing, searching, and managing aspects
+- **Mobile apps** - Native applications that consume aspects
+- **Third-party integrations** - Any service that integrates with the registry
 
 Each client type may implement these operations differently based on its platform, but all use the same underlying Registry API.
 
 ### Design Principles
 
-1. **Registry-first** — All operations go through the API, not static files
-2. **Privacy-preserving** — No user tracking, aggregate stats only
-3. **Offline-capable** — Clients can cache registry data locally
-4. **Authentication flexible** — Device flow for CLI, sessions for web, bearer tokens for integrations
-5. **Stateless** — API is stateless; client handles local state management
-6. **NPM-style UX** — Familiar mental model for developers
+1. **Registry-first** - All operations go through the API, not static files
+2. **Privacy-preserving** - No user tracking, aggregate stats only
+3. **Offline-capable** - Clients can cache registry data locally
+4. **Authentication flexible** - Device flow for CLI, sessions for web, bearer tokens for integrations
+5. **Stateless** - API is stateless; client handles local state management
+6. **NPM-style UX** - Familiar mental model for developers
 
 ---
 
@@ -372,19 +372,19 @@ Search across all aspects by name, displayName, and tagline. Supports filtering 
 
 **Valid Categories:**
 
-- `assistant` — General helpful AI assistants
-- `roleplay` — Characters, personas, storytelling
-- `creative` — Writing, art, brainstorming
-- `productivity` — Work, tasks, organization
-- `education` — Learning, tutoring, explanations
-- `gaming` — Games, campaigns, entertainment
-- `spiritual` — Mindfulness, wisdom, guidance
-- `pundit` — Commentary, analysis, opinions
+- `assistant` - General helpful AI assistants
+- `roleplay` - Characters, personas, storytelling
+- `creative` - Writing, art, brainstorming
+- `productivity` - Work, tasks, organization
+- `education` - Learning, tutoring, explanations
+- `gaming` - Games, campaigns, entertainment
+- `spiritual` - Mindfulness, wisdom, guidance
+- `pundit` - Commentary, analysis, opinions
 
 **Valid Trust Levels:**
 
-- `verified` — Verified by aspects.sh
-- `community` — Community-contributed
+- `verified` - Verified by aspects.sh
+- `community` - Community-contributed
 
 **Request:**
 
@@ -860,10 +860,10 @@ POST /api/v1/auth/device
 
 **Save for polling:**
 
-- `device_code` — Use in poll requests
-- `code_verifier` — PKCE code verifier, use in poll requests
-- `expires_in` — Time until code expires (seconds)
-- `interval` — Minimum seconds between polls
+- `device_code` - Use in poll requests
+- `code_verifier` - PKCE code verifier, use in poll requests
+- `expires_in` - Time until code expires (seconds)
+- `interval` - Minimum seconds between polls
 
 #### Step 2: Direct User to Verification URL
 
@@ -1056,10 +1056,10 @@ Find aspects using keywords, categories, and filters.
 
 **Common filters:**
 
-- `q` — Search term
-- `category` — Aspect category
-- `trust` — Trust level (verified, community)
-- `limit` / `offset` — Pagination
+- `q` - Search term
+- `category` - Aspect category
+- `trust` - Trust level (verified, community)
+- `limit` / `offset` - Pagination
 
 **Error handling:**
 
@@ -2065,11 +2065,11 @@ Complete JSON Schema for aspect.json validation:
 
 This guide provides everything needed to implement ANY client (CLI, web, mobile, or third-party) for the aspects registry API. Key takeaways:
 
-1. **API is complete** — All endpoints are fully specified with examples
-2. **Authentication is flexible** — Device flow for CLI, sessions for web, bearer tokens for third-party
-3. **Core operations are universal** — Fetch, search, publish, authenticate, browse
-4. **Error handling is predictable** — Consistent error codes and messages
-5. **Implementation is client-specific** — Same API, different client implementations
+1. **API is complete** - All endpoints are fully specified with examples
+2. **Authentication is flexible** - Device flow for CLI, sessions for web, bearer tokens for third-party
+3. **Core operations are universal** - Fetch, search, publish, authenticate, browse
+4. **Error handling is predictable** - Consistent error codes and messages
+5. **Implementation is client-specific** - Same API, different client implementations
 
 ### Quick Implementation Checklist
 

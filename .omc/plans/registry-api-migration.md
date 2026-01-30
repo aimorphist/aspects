@@ -15,11 +15,11 @@ All 12 work items implemented. All 10 success criteria verified. 59/59 tests pas
 
 ## Decisions
 
-- **All commands at once** — no phased rollout
+- **All commands at once** - no phased rollout
 - **Replace GitHub PR publish** entirely with REST API publish
 - **Rename aspect.yaml to aspect.json** throughout the codebase
 - **Implement full device auth** (login/logout with device authorization flow)
-- **Skip unpublish** — defer to later phase
+- **Skip unpublish** - defer to later phase
 - **Base URL:** `http://localhost:5173/api/v1` (dev), configurable for production
 
 ---
@@ -35,29 +35,29 @@ All 12 work items implemented. All 10 success criteria verified. 59/59 tests pas
 - Add API response types: `ApiError`, `ApiSearchResult`, `ApiAspectDetail`, `ApiVersionContent`, `ApiPublishResponse`, `ApiDeviceCode`, `ApiDevicePoll`
 - Add `registryUrl` to config settings (default: `http://localhost:5173/api/v1`)
 - Add config helpers: `getAuthToken()`, `setAuthTokens()`, `clearAuth()`, `isLoggedIn()`
-- Update `InstalledAspect` — no structural change needed, but ensure `source: 'registry'` path works with the new API
+- Update `InstalledAspect` - no structural change needed, but ensure `source: 'registry'` path works with the new API
 
 ### 2. Create REST API client module
 
 **New file:** `src/lib/api-client.ts`
 
 **Functions to implement:**
-- `createApiClient(baseUrl?: string)` — factory that reads config for base URL
-- `getRegistry()` — `GET /registry` (full index, cached 5 min)
-- `getAspect(name: string)` — `GET /aspects/:name` (all versions + stats)
-- `getAspectVersion(name: string, version: string)` — `GET /aspects/:name/:version` (specific content)
-- `searchAspects(params: { q?, category?, trust?, limit?, offset? })` — `GET /search`
-- `publishAspect(aspect: Aspect, token: string)` — `POST /aspects` (auth required)
-- `getStats()` — `GET /stats`
-- `getCategories()` — `GET /categories`
-- `initiateDeviceAuth()` — `POST /auth/device`
-- `pollDeviceAuth(deviceCode: string, codeVerifier: string)` — `POST /auth/device/poll`
+- `createApiClient(baseUrl?: string)` - factory that reads config for base URL
+- `getRegistry()` - `GET /registry` (full index, cached 5 min)
+- `getAspect(name: string)` - `GET /aspects/:name` (all versions + stats)
+- `getAspectVersion(name: string, version: string)` - `GET /aspects/:name/:version` (specific content)
+- `searchAspects(params: { q?, category?, trust?, limit?, offset? })` - `GET /search`
+- `publishAspect(aspect: Aspect, token: string)` - `POST /aspects` (auth required)
+- `getStats()` - `GET /stats`
+- `getCategories()` - `GET /categories`
+- `initiateDeviceAuth()` - `POST /auth/device`
+- `pollDeviceAuth(deviceCode: string, codeVerifier: string)` - `POST /auth/device/poll`
 
 **Cross-cutting concerns:**
 - Use `ofetch` (already a dependency) for HTTP requests
 - 30-second default timeout
 - Retry with exponential backoff for 429/503 (max 3 retries)
-- Structured error handling — parse API error responses into typed errors
+- Structured error handling - parse API error responses into typed errors
 - Auth header injection for authenticated endpoints
 - In-memory cache with TTL for registry index (5 min) and categories (24 hr)
 
@@ -67,7 +67,7 @@ All 12 work items implemented. All 10 success criteria verified. 59/59 tests pas
 
 **Changes:**
 - Replace `fetchRegistryIndex()` internals to call `apiClient.getRegistry()` instead of fetching raw GitHub URL
-- Replace `getRegistryAspect()` to call `apiClient.getAspect(name)` — direct lookup instead of downloading full index
+- Replace `getRegistryAspect()` to call `apiClient.getAspect(name)` - direct lookup instead of downloading full index
 - Replace `fetchAspectYaml()` with `fetchAspectContent()` that calls `apiClient.getAspectVersion(name, version)` and returns the `content` field
 - Keep `clearRegistryCache()` but expand it to clear API client caches too
 - Add new exports: `searchRegistry()`, `getRegistryStats()`, `getCategories()`
@@ -92,14 +92,14 @@ All 12 work items implemented. All 10 success criteria verified. 59/59 tests pas
 **Files:** All files referencing `aspect.yaml`
 
 **Changes:**
-- `src/lib/installer.ts` — file write paths
-- `src/lib/aspect-loader.ts` — file read paths
-- `src/lib/parser.ts` — file references
-- `src/commands/publish.ts` — file scanning
-- `src/commands/info.ts` — if it reads files directly
-- `src/commands/create.ts` — file output
-- `src/commands/validate.ts` — file references
-- `src/utils/paths.ts` — if it defines filename constants
+- `src/lib/installer.ts` - file write paths
+- `src/lib/aspect-loader.ts` - file read paths
+- `src/lib/parser.ts` - file references
+- `src/commands/publish.ts` - file scanning
+- `src/commands/info.ts` - if it reads files directly
+- `src/commands/create.ts` - file output
+- `src/commands/validate.ts` - file references
+- `src/utils/paths.ts` - if it defines filename constants
 - Add backwards compatibility: when loading, check for `aspect.json` first, fall back to `aspect.yaml`
 - Existing installed aspects with `aspect.yaml` files continue to work
 
@@ -108,17 +108,17 @@ All 12 work items implemented. All 10 success criteria verified. 59/59 tests pas
 **New file:** `src/commands/login.ts`
 
 **Flow:**
-1. Check if already logged in — if so, display current user and ask to re-login
+1. Check if already logged in - if so, display current user and ask to re-login
 2. Call `apiClient.initiateDeviceAuth()` to get device_code, user_code, verification_uri
 3. Display: verification URL with user code
 4. Attempt to open browser via `open` (macOS) / `xdg-open` (Linux) / `start` (Windows)
 5. Poll `apiClient.pollDeviceAuth()` every `interval` seconds (default 5)
 6. Handle poll responses:
-   - `pending` — continue polling, show spinner
-   - `slow_down` — double interval, continue
-   - `expired` — error, suggest re-running login
-   - `denied` — error message
-   - `success` — store tokens in config
+   - `pending` - continue polling, show spinner
+   - `slow_down` - double interval, continue
+   - `expired` - error, suggest re-running login
+   - `denied` - error message
+   - `success` - store tokens in config
 7. On success: call `setAuthTokens()` to save to `~/.aspects/config.json`
 8. Display: "Authorized as @username"
 
@@ -129,7 +129,7 @@ All 12 work items implemented. All 10 success criteria verified. 59/59 tests pas
 **New file:** `src/commands/logout.ts`
 
 **Flow:**
-1. Check if logged in — if not, say "Not logged in"
+1. Check if logged in - if not, say "Not logged in"
 2. Call `clearAuth()` to remove tokens from config
 3. Display: "Logged out. Auth tokens removed."
 
@@ -154,11 +154,11 @@ All 12 work items implemented. All 10 success criteria verified. 59/59 tests pas
 
 **File:** `src/commands/publish.ts`
 
-**Changes — full rewrite, remove GitHub PR workflow entirely:**
+**Changes - full rewrite, remove GitHub PR workflow entirely:**
 - Replace the 687-line GitHub PR workflow with a clean API publish:
   1. Scan for local `aspect.json` (current dir, subdirs, `~/.aspects/aspects/`)
   2. Validate against Zod schema locally (keep existing validation logic)
-  3. Check auth — require login, verify publisher matches username
+  3. Check auth - require login, verify publisher matches username
   4. Check file size (50KB limit)
   5. `POST /aspects` with auth header via `apiClient.publishAspect()`
   6. Handle success/error responses with helpful messages per Implementation Guide
@@ -196,7 +196,7 @@ All 12 work items implemented. All 10 success criteria verified. 59/59 tests pas
 - Import and register `logout` command
 - Add `whoami` alias for checking auth status (optional, could be part of login with no args)
 
-### 12. Update add command — wire up force flag
+### 12. Update add command - wire up force flag
 
 **File:** `src/commands/add.ts`
 
@@ -249,12 +249,12 @@ Phases B and C items within each phase can be parallelized where noted as "stand
 |------|-------------|
 | `src/lib/types.ts` | Add auth types, API response types |
 | `src/lib/config.ts` | Add auth helpers, registryUrl setting |
-| `src/lib/registry.ts` | Major rewrite — use API client |
+| `src/lib/registry.ts` | Major rewrite - use API client |
 | `src/lib/installer.ts` | Use new registry functions, rename yaml→json |
 | `src/lib/aspect-loader.ts` | Rename yaml→json with fallback |
 | `src/lib/parser.ts` | Rename yaml→json references |
 | `src/commands/search.ts` | Server-side search + filters |
-| `src/commands/publish.ts` | Full rewrite — replace GitHub PR with API publish |
+| `src/commands/publish.ts` | Full rewrite - replace GitHub PR with API publish |
 | `src/commands/info.ts` | Add remote lookup |
 | `src/commands/add.ts` | Wire up force flag, rename yaml→json |
 | `src/commands/create.ts` | Rename yaml→json in output |

@@ -56,7 +56,7 @@ export default defineCommand({
       
       const name = c.aspect(item.name);
       const version = c.version(`@${item.version}`);
-      const tagline = aspect?.tagline ? c.muted(` — ${aspect.tagline}`) : '';
+      const tagline = aspect?.tagline ? c.muted(` - ${aspect.tagline}`) : '';
       
       console.log(`  ${name}${version}${scopeLabel}${sourceLabel}${tagline}`);
     }

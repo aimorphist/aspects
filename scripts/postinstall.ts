@@ -9,7 +9,7 @@ console.log(colors.dim("  # Install an aspect"));
 console.log("  npx @morphist/aspects add alaric");
 console.log();
 console.log(colors.dim("  # Search the registry"));
-console.log("  npx @morphist/aspects search wizard");
+console.log("  npx @morphist/aspects search meditation");
 console.log();
 console.log(colors.dim("  # Create your own aspect"));
 console.log("  npx @morphist/aspects create");

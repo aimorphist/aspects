@@ -6,7 +6,19 @@ import { c, icons } from '../utils/colors';
 export default defineCommand({
   meta: {
     name: 'search',
-    description: 'Search the aspect registry',
+    description: `Search the aspect registry.
+
+Searches aspect names, display names, taglines, and tags.
+
+Examples:
+  aspects search wizard           Find aspects matching "wizard"
+  aspects search                  List all aspects
+  aspects search --category roleplay   Filter by category
+  aspects search --trust verified      Only verified aspects
+
+Categories: assistant, roleplay, creative, productivity, education, gaming, spiritual, pundit
+
+For advanced filtering, use 'aspects find' with boolean operators.`,
   },
   args: {
     query: {

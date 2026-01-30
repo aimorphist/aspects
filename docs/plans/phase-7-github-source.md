@@ -8,7 +8,7 @@ Enable `aspects install github:user/repo` to install aspects directly from GitHu
 
 - Resolver parses `github:owner/repo@ref` → `{ type: 'github', owner, repo, ref }` (`src/lib/resolver.ts:17-30`)
 - Installer returns "not yet supported" for GitHub specs (`src/lib/installer.ts:33`)
-- `InstallResult.source` is `'registry' | 'local'` — needs `'github'`
+- `InstallResult.source` is `'registry' | 'local'` - needs `'github'`
 - `InstalledAspect` has no field to track the git ref used
 
 ## Desired End State

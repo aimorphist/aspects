@@ -1,4 +1,4 @@
-# Phase 1: Core CLI Scaffold — Implementation Plan
+# Phase 1: Core CLI Scaffold - Implementation Plan
 
 > **Goal**: `npx aspects` runs and shows help with all command stubs
 
@@ -17,7 +17,7 @@ Set up the CLI foundation with citty, create the command structure, configure pa
 
 ```bash
 $ npx aspects
-aspects v0.1.0 — Package manager for AI personality aspects
+aspects v0.1.0 - Package manager for AI personality aspects
 
 Usage: aspects <command> [options]
 

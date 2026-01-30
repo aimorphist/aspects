@@ -1,4 +1,4 @@
-# aspects.sh — Product Specification
+# aspects.sh - Product Specification
 
 > The open registry for AI personality aspects. Born from Morphist.
 
@@ -6,7 +6,7 @@
 
 ## Overview
 
-**aspects.sh** is the web home for the Aspects registry — a place to discover, create, and share AI personality modules.
+**aspects.sh** is the web home for the Aspects registry - a place to discover, create, and share AI personality modules.
 
 ### Mission
 
@@ -18,7 +18,7 @@ Make it dead simple for anyone to create and share AI personalities, with zero f
 
 ### Flow 1: Web App (aspects.sh)
 
-**Audience:** Everyone — lowest friction
+**Audience:** Everyone - lowest friction
 
 ```
 User visits aspects.sh/create
@@ -31,7 +31,7 @@ User visits aspects.sh/create
 **Features:**
 
 - Visual form with live preview
-- "Generate with AI" button — describe your aspect in plain English
+- "Generate with AI" button - describe your aspect in plain English
 - GitHub OAuth for attribution (optional)
 - No git knowledge required
 
@@ -39,7 +39,7 @@ User visits aspects.sh/create
 
 ### Flow 2: GitHub Issue Form
 
-**Audience:** GitHub users — browser-based, no git
+**Audience:** GitHub users - browser-based, no git
 
 ```
 User visits github.com/aimorphist/aspects/issues/new
@@ -51,14 +51,14 @@ User visits github.com/aimorphist/aspects/issues/new
 
 **Implementation:**
 
-- `.github/ISSUE_TEMPLATE/new-aspect.yml` — structured form
-- `.github/workflows/issue-to-pr.yml` — bot that creates PR from issue
+- `.github/ISSUE_TEMPLATE/new-aspect.yml` - structured form
+- `.github/workflows/issue-to-pr.yml` - bot that creates PR from issue
 
 ---
 
 ### Flow 3: CLI via npm
 
-**Audience:** Developers — power users
+**Audience:** Developers - power users
 
 ```bash
 npx @aspect/cli create     # Interactive wizard

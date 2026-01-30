@@ -71,7 +71,28 @@ const CATEGORY_OPTIONS: Array<{
 export default defineCommand({
   meta: {
     name: "create",
-    description: "Create a new aspect interactively",
+    description: `Create a new aspect interactively.
+
+The generator guides you through:
+  1. Name & identity (slug, display name, tagline)
+  2. Category selection (assistant, roleplay, creative, etc.)
+  3. Tags for discovery
+  4. Voice hints (speed, emotions)
+  5. Directives & Instructions
+
+Directives vs Instructions:
+  Directives   Strict MUST-follow rules with priority (high/medium/low)
+               Emphasized across all LLM models via XML, bold, repetition
+  Instructions Softer guidance and preferences, not strictly enforced
+
+Examples:
+  aspects create                  Create in current directory
+  aspects create my-aspect        Create in ./my-aspect/
+  aspects create ~/aspects/new    Create at specific path
+
+If run inside the aspects registry repo, automatically offers to:
+  - Add to registry/index.json
+  - Commit and push changes`,
   },
   args: {
     path: {
@@ -133,7 +154,7 @@ export default defineCommand({
     while (!aspectName) {
       const nameInput = await p.text({
         message: "Aspect name (slug)",
-        placeholder: "my-wizard",
+        placeholder: "my-aspect",
         validate: (value) => {
           if (!value) return "Name is required";
           if (!/^[a-z0-9-]+$/.test(value)) {
@@ -180,7 +201,7 @@ export default defineCommand({
         displayName: () =>
           p.text({
             message: "Display name",
-            placeholder: "My Wizard",
+            placeholder: "My Aspect",
             validate: (value) => {
               if (!value) return "Display name is required";
             },
@@ -189,7 +210,7 @@ export default defineCommand({
         tagline: () =>
           p.text({
             message: "Tagline (one-liner description)",
-            placeholder: "A wise and quirky wizard who loves riddles",
+            placeholder: "A helpful assistant with a unique personality",
             validate: (value) => {
               if (!value) return "Tagline is required";
               if (value.length > 200)
@@ -239,8 +260,8 @@ export default defineCommand({
             message: "Voice speed",
             options: [
               { value: "normal", label: "Normal" },
-              { value: "slow", label: "Slow — deliberate, thoughtful" },
-              { value: "fast", label: "Fast — energetic, excited" },
+              { value: "slow", label: "Slow - deliberate, thoughtful" },
+              { value: "fast", label: "Fast - energetic, excited" },
             ],
             initialValue: "normal",
           }),
@@ -249,9 +270,9 @@ export default defineCommand({
           p.select({
             message: "Prompt template",
             options: [
-              { value: "character", label: "Character — roleplay a persona" },
-              { value: "assistant", label: "Assistant — helpful AI style" },
-              { value: "blank", label: "Blank — start from scratch" },
+              { value: "character", label: "Character - roleplay a persona" },
+              { value: "assistant", label: "Assistant - helpful AI style" },
+              { value: "blank", label: "Blank - start from scratch" },
             ],
             initialValue: "character",
           }),
@@ -273,15 +294,15 @@ export default defineCommand({
           .filter(Boolean)
       : undefined;
 
-    // Directives & Instructions wizard step
+    // Directives & Instructions step
     p.log.message(`
 📋 Directives & Instructions
 
-Directives are MUST-follow rules — they get special emphasis
+Directives are MUST-follow rules - they get special emphasis
 across all LLM models (bold, XML tags, repetition).
   Example: "Never break character under any circumstances"
 
-Instructions are general guidance — softer preferences for
+Instructions are general guidance - softer preferences for
 how the AI should behave.
   Example: "Prefer shorter responses when possible"
 
@@ -327,8 +348,8 @@ Keep it light! A few well-crafted rules beat many vague ones.
           {
             value: "done",
             label: hasAny
-              ? "Done — finish creating aspect"
-              : "Skip — finish without adding any",
+              ? "Done - finish creating aspect"
+              : "Skip - finish without adding any",
           },
         ],
       });
@@ -536,11 +557,11 @@ Keep it light! A few well-crafted rules beat many vague ones.
                 `\nNext: Open a PR at https://github.com/${GITHUB_REPO}/compare`,
               );
             } catch {
-              p.log.warn("Push failed — you may need to set up your remote");
+              p.log.warn("Push failed - you may need to set up your remote");
             }
           }
         } catch {
-          p.log.warn("Git commit failed — you may need to commit manually");
+          p.log.warn("Git commit failed - you may need to commit manually");
         }
       }
     } else {

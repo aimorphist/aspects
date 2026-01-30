@@ -15,7 +15,24 @@ const MAX_ASPECT_SIZE = 51200; // 50KB
 export default defineCommand({
   meta: {
     name: 'share',
-    description: 'Share an aspect anonymously via content hash (no account required)',
+    description: `Share an aspect anonymously via content hash (no account required).
+
+How it works:
+  1. Computes Blake3 hash of your aspect content
+  2. Uploads to registry (content-addressed storage)
+  3. Anyone can install via: aspects add blake3:<hash>
+
+No account needed! Perfect for:
+  - Quick one-off sharing
+  - Testing before claiming a name
+  - Anonymous contributions
+
+Examples:
+  aspects share my-aspect           Share an installed aspect
+  aspects share ./path/to/aspect    Share from local path
+  aspects share my-aspect --dry-run Preview hash without uploading
+
+Want to claim a name instead? Use 'aspects publish' (requires login).`,
   },
   args: {
     target: {
@@ -119,7 +136,7 @@ export default defineCommand({
     console.log();
 
     if (dryRun) {
-      p.log.info('Dry run — not uploading');
+      p.log.info('Dry run - not uploading');
       console.log();
       console.log(`  ${c.label('Install')} aspects add hash:${hash}`);
       console.log();
@@ -162,7 +179,7 @@ export default defineCommand({
         p.log.error(err.message);
 
         if (err.errorCode === 'already_exists') {
-          // Hash already exists on server — that's fine for sharing
+          // Hash already exists on server - that's fine for sharing
           console.log();
           console.log(`${icons.info} This aspect is already available on the registry.`);
           console.log();

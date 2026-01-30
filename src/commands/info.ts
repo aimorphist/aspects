@@ -24,7 +24,7 @@ export default defineCommand({
     if (installed) {
       const aspect = await loadInstalledAspect(args.name);
       if (!aspect) {
-        log.error(`Failed to load aspect "${args.name}" — aspect.json may be corrupted`);
+        log.error(`Failed to load aspect "${args.name}" - aspect.json may be corrupted`);
         process.exit(1);
       }
 
@@ -72,7 +72,7 @@ export default defineCommand({
       return;
     }
 
-    // Not installed locally — try registry API
+    // Not installed locally - try registry API
     try {
       const detail = await getAspectDetail(args.name);
 

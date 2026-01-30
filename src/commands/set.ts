@@ -71,7 +71,7 @@ const createCommand = defineCommand({
     },
     aspects: {
       type: "positional",
-      description: "Aspects to include (optional, launches wizard if omitted)",
+      description: "Aspects to include (optional, launches generator if omitted)",
       required: false,
     },
   },
@@ -97,7 +97,7 @@ const createCommand = defineCommand({
     let description = "";
     let aspectsToAdd: string[] = [...aspectArgs];
 
-    // If no aspects provided, run wizard
+    // If no aspects provided, run generator
     if (aspectsToAdd.length === 0) {
       p.intro(`${icons.package} Create a new set`);
 
@@ -514,5 +514,5 @@ export default defineCommand({
   },
 });
 
-// Export for create wizard integration
+// Export for create command integration
 export { listAllSets, loadSet, saveSet, type AspectSet };

@@ -24,7 +24,24 @@ interface AspectInfo {
 export default defineCommand({
   meta: {
     name: "publish",
-    description: "Publish an aspect to the registry",
+    description: `Publish an aspect to the registry (requires login).
+
+Publishing claims the aspect name under your account. You can then:
+  - Publish new versions (bump version in aspect.json)
+  - Update metadata (tagline, tags, category)
+  - Build a publisher reputation
+
+The publisher field in aspect.json must match your logged-in username.
+
+Examples:
+  aspects publish                  Interactive (scans for aspects)
+  aspects publish ./my-aspect      Publish specific aspect
+  aspects publish --dry-run        Validate without publishing
+
+Don't want an account? Use 'aspects share' instead:
+  - No login required
+  - Content-addressed by Blake3 hash
+  - Anyone can install via: aspects add blake3:<hash>`,
   },
   args: {
     path: {

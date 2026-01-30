@@ -43,7 +43,7 @@ bun run typecheck                 # No errors
 - GitHub source support (Phase 7)
 - Signature verification (Phase 8)
 - Version resolution/ranges (just exact versions)
-- Scoped packages (@publisher/name) — parse but treat as simple name for now
+- Scoped packages (@publisher/name) - parse but treat as simple name for now
 
 ---
 

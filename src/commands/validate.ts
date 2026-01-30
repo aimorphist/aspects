@@ -7,7 +7,25 @@ import { aspectSchema, OFFICIAL_CATEGORIES } from "../lib/schema";
 export default defineCommand({
   meta: {
     name: "validate",
-    description: "Validate an aspect.json file against the schema",
+    description: `Validate an aspect.json file against the schema.
+
+Checks:
+  - Required fields (name, displayName, tagline, category, prompt)
+  - Field length limits
+  - Category is valid
+  - Directive/instruction structure
+  - Mode references valid directives
+
+Examples:
+  aspects validate                 Validate in current directory
+  aspects validate ./my-aspect     Validate specific path
+  aspects validate --strict        Stricter checks
+  aspects validate --security      Scan for prompt injection patterns
+
+Security scan flags patterns like:
+  - "ignore previous instructions"
+  - Requests for passwords or financial info
+  - Known jailbreak attempts`,
   },
   args: {
     path: {
@@ -159,7 +177,7 @@ export default defineCommand({
     p.log.info("Checks:");
     for (const check of checks) {
       const icon = check.passed ? "✓" : "✗";
-      const msg = check.message ? ` — ${check.message}` : "";
+      const msg = check.message ? ` - ${check.message}` : "";
       if (check.passed) {
         p.log.success(`  ${icon} ${check.label}${msg}`);
       } else {

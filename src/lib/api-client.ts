@@ -156,7 +156,7 @@ async function apiFetch<T>(
 // --- API Methods ---
 
 /**
- * GET /registry — Full registry index (cached 5 min)
+ * GET /registry - Full registry index (cached 5 min)
  */
 export async function getRegistry(baseUrl?: string): Promise<RegistryIndex> {
   const cacheKey = `registry:${baseUrl ?? 'default'}`;
@@ -169,14 +169,14 @@ export async function getRegistry(baseUrl?: string): Promise<RegistryIndex> {
 }
 
 /**
- * GET /aspects/:name — Aspect metadata with all versions
+ * GET /aspects/:name - Aspect metadata with all versions
  */
 export async function getAspect(name: string): Promise<ApiAspectDetail> {
   return apiFetch<ApiAspectDetail>(`/aspects/${encodeURIComponent(name)}`);
 }
 
 /**
- * GET /aspects/:name/:version — Specific version content
+ * GET /aspects/:name/:version - Specific version content
  */
 export async function getAspectVersion(
   name: string,
@@ -188,7 +188,7 @@ export async function getAspectVersion(
 }
 
 /**
- * GET /search — Full-text search
+ * GET /search - Full-text search
  */
 export async function searchAspects(params: {
   q?: string;
@@ -209,7 +209,7 @@ export async function searchAspects(params: {
 }
 
 /**
- * POST /aspects — Publish a new aspect (auth required)
+ * POST /aspects - Publish a new aspect (auth required)
  */
 export async function publishAspect(aspect: Aspect): Promise<ApiPublishResponse> {
   return apiFetch<ApiPublishResponse>('/aspects', {
@@ -220,7 +220,7 @@ export async function publishAspect(aspect: Aspect): Promise<ApiPublishResponse>
 }
 
 /**
- * POST /aspects/blob — Publish anonymously by hash (no auth)
+ * POST /aspects/blob - Publish anonymously by hash (no auth)
  * Content-addressable storage: same content = same hash, idempotent
  */
 export async function publishAnonymous(aspect: Aspect): Promise<ApiAnonymousPublishResponse> {
@@ -232,14 +232,14 @@ export async function publishAnonymous(aspect: Aspect): Promise<ApiAnonymousPubl
 }
 
 /**
- * GET /aspects/blob/:hash — Fetch aspect by blake3 hash (no auth)
+ * GET /aspects/blob/:hash - Fetch aspect by blake3 hash (no auth)
  */
 export async function getAspectByHash(hash: string): Promise<ApiVersionContent> {
   return apiFetch<ApiVersionContent>(`/aspects/blob/${encodeURIComponent(hash)}`);
 }
 
 /**
- * DELETE /aspects/:name/:version — Unpublish a version (auth required)
+ * DELETE /aspects/:name/:version - Unpublish a version (auth required)
  */
 export async function unpublishAspect(
   name: string,
@@ -252,7 +252,7 @@ export async function unpublishAspect(
 }
 
 /**
- * GET /stats — Aggregate statistics
+ * GET /stats - Aggregate statistics
  */
 export async function getStats(): Promise<ApiStats> {
   const cached = getCached<ApiStats>('stats');
@@ -264,7 +264,7 @@ export async function getStats(): Promise<ApiStats> {
 }
 
 /**
- * GET /categories — Official categories list
+ * GET /categories - Official categories list
  */
 export async function getCategories(): Promise<ApiCategories> {
   const cached = getCached<ApiCategories>('categories');
@@ -276,20 +276,20 @@ export async function getCategories(): Promise<ApiCategories> {
 }
 
 /**
- * POST /auth/device — Initiate device authorization
+ * POST /auth/device - Initiate device authorization
  */
 export async function initiateDeviceAuth(): Promise<ApiDeviceCode> {
   return apiFetch<ApiDeviceCode>('/auth/device', { method: 'POST' });
 }
 
 /**
- * POST /auth/device/poll — Poll for authorization result
+ * POST /auth/device/poll - Poll for authorization result
  */
 export async function pollDeviceAuth(
   deviceCode: string,
   codeVerifier: string,
 ): Promise<ApiDevicePoll> {
-  // Don't retry on poll — caller handles polling loop
+  // Don't retry on poll - caller handles polling loop
   const baseUrl = await getRegistryUrl();
   const url = `${baseUrl}/auth/device/poll`;
 

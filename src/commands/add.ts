@@ -7,12 +7,28 @@ import { findProjectRoot, getDefaultScope, type InstallScope } from "../utils/pa
 export default defineCommand({
   meta: {
     name: "add",
-    description: "Install aspect(s) to your local library",
+    description: `Install aspect(s) to your local library.
+
+Sources:
+  aspects add alaric              From registry (aspects.sh)
+  aspects add alaric@1.2.0        Specific version
+  aspects add blake3:<hash>       By content hash (from 'aspects share')
+  aspects add github:user/repo    From GitHub repository
+  aspects add ./my-aspect         From local path
+
+Scope:
+  By default, installs to ./.aspects/ if in a project, else ~/.aspects/
+  Use -g/--global to always install to ~/.aspects/
+
+Examples:
+  aspects add alaric meditation-guide    Install multiple aspects
+  aspects add -g alaric                  Install globally
+  aspects add --force alaric             Overwrite existing`,
   },
   args: {
     specs: {
       type: "positional",
-      description: "Aspect name(s), github:user/repo, or ./path",
+      description: "Aspect spec(s): name, name@version, blake3:<hash>, github:user/repo, or ./path",
       required: true,
     },
     force: {

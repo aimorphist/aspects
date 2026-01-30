@@ -7,7 +7,7 @@
   ╚═╝  ╚═╝╚══════╝╚═╝     ╚══════╝ ╚═════╝   ╚═╝   ╚══════╝
 ```
 
-> **Community Aspects Registry** — Personality modules for AI agents.
+> **Community Aspects Registry** - Personality modules for AI agents.
 
 [![Validate PRs](https://github.com/aimorphist/aspects/actions/workflows/validate-pr.yml/badge.svg)](https://github.com/aimorphist/aspects/actions/workflows/validate-pr.yml)
 
@@ -15,14 +15,14 @@
 
 ## What are Aspects?
 
-Aspects are personality modules for AI agents. They define how an AI speaks, thinks, and behaves — from quirky wizards to helpful assistants to domain experts.
+Aspects are personality modules for AI agents. They define how an AI speaks, thinks, and behaves - from quirky wizards to helpful assistants to domain experts.
 
 Each aspect is a JSON file containing:
 
-- **Identity** — Name, tagline, character description
-- **Voice Hints** — Speaking speed, emotional tone, style guidance
-- **Modes** — Different behavioral modes (e.g., "campaign mode" for a D&D wizard)
-- **Prompt** — The core personality prompt
+- **Identity** - Name, tagline, character description
+- **Voice Hints** - Speaking speed, emotional tone, style guidance
+- **Modes** - Different behavioral modes (e.g., "campaign mode" for a D&D wizard)
+- **Prompt** - The core personality prompt
 
 ## Quick Start
 
@@ -58,7 +58,38 @@ npx @morphist/aspects add alaric
 npx @morphist/aspects add -g alaric
 ```
 
-See [CLI Documentation](./docs/CLI.md) for full reference.
+### Create & Share (No Account Needed)
+
+The simplest way to publish an aspect:
+
+```bash
+# 1. Create your aspect interactively
+npx @morphist/aspects create my-aspect
+
+# 2. Edit the generated aspect.json (customize prompt, add directives)
+
+# 3. Share to the public registry
+npx @morphist/aspects share ./my-aspect
+# Output: ✓ Shared! Hash: 7kYx3...abc
+
+# 4. Anyone can now install it:
+npx @morphist/aspects add blake3:7kYx3...abc
+```
+
+### Account vs Anonymous
+
+| Method | Command | Benefits |
+|--------|---------|----------|
+| **Anonymous** | `aspects share` | Quick sharing via hash, no account needed |
+| **Logged in** | `aspects publish` | Own your aspect name, version updates, edit metadata |
+
+We fully embrace anonymous contributions - but creating an account lets you claim names and publish updates.
+
+### Behavioral Rules
+
+Aspects support **directives** (strict MUST-follow rules) and **instructions** (softer guidance). See [Instructions & Directives](#instructions--directives) for details.
+
+Run `npx @morphist/aspects --help` for quick reference, or see [CLI Documentation](./docs/CLI.md) for full details.
 
 ## Registry Structure
 
@@ -184,7 +215,7 @@ Directives are **MUST-follow** rules with priority levels. They receive special 
 
 ### Instructions (General Guidance)
 
-Instructions are softer preferences—guidance rather than hard rules.
+Instructions are softer preferences-guidance rather than hard rules.
 
 ```json
 {
@@ -216,9 +247,9 @@ By placing critical rules in both positions, aspects work reliably across all mo
 
 ### Best Practices
 
-- **Few > Many** — A few well-crafted rules beat many vague ones
-- **Add escape clauses** — "Never do X, unless the user explicitly requests it" (GPT takes absolutes very literally)
-- **Be specific** — "Never reveal you are an AI" vs "Stay in character"
+- **Few > Many** - A few well-crafted rules beat many vague ones
+- **Add escape clauses** - "Never do X, unless the user explicitly requests it" (GPT takes absolutes very literally)
+- **Be specific** - "Never reveal you are an AI" vs "Stay in character"
 
 See [Multi-LLM Prompting Guide](./docs/MULTI-LLM-PROMPTING.md) for detailed cross-model guidance.
 
@@ -357,7 +388,7 @@ npx @morphist/aspects <command>
 
 | Command    | Aliases | Description               |
 | ---------- | ------- | ------------------------- |
-| `create`   | `c`, `new`, `n` | Interactive aspect wizard |
+| `create`   | `c`, `new`, `n` | Interactive aspect generator |
 | `add`      | `install`, `i`, `a` | Install aspects           |
 | `list`     | `ls` | List installed aspects    |
 | `search`   | | Search registry           |
@@ -365,7 +396,9 @@ npx @morphist/aspects <command>
 | `remove`   | `rm` | Uninstall aspect          |
 | `validate` | | Validate aspect.json      |
 | `publish`  | | Submit to registry        |
+| `share`    | | Share anonymously via hash |
 | `login`    | | Authenticate with registry |
+| `logout`   | | Sign out                  |
 
 ### Options
 

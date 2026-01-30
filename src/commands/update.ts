@@ -57,13 +57,13 @@ export default defineCommand({
     for (const aspect of toCheck) {
       // Skip local installs
       if (aspect.source === 'local') {
-        console.log(`  ${c.aspect(aspect.name)} ${c.muted('— local install, skipping')}`);
+        console.log(`  ${c.aspect(aspect.name)} ${c.muted('- local install, skipping')}`);
         continue;
       }
 
       // Skip GitHub installs
       if (aspect.source === 'github') {
-        console.log(`  ${c.aspect(aspect.name)} ${c.muted('— github install, use')} ${c.highlight('aspects install github:...')} ${c.muted('to update')}`);
+        console.log(`  ${c.aspect(aspect.name)} ${c.muted('- github install, use')} ${c.highlight('aspects install github:...')} ${c.muted('to update')}`);
         continue;
       }
 
@@ -71,12 +71,12 @@ export default defineCommand({
       try {
         registryInfo = await getRegistryAspect(aspect.name);
       } catch {
-        console.log(`  ${c.aspect(aspect.name)} ${c.error('— failed to check registry')}`);
+        console.log(`  ${c.aspect(aspect.name)} ${c.error('- failed to check registry')}`);
         continue;
       }
 
       if (!registryInfo) {
-        console.log(`  ${c.aspect(aspect.name)} ${c.warn('— not found in registry')}`);
+        console.log(`  ${c.aspect(aspect.name)} ${c.warn('- not found in registry')}`);
         continue;
       }
 

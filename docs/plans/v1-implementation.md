@@ -5,7 +5,7 @@
 
 ## Overview
 
-**What**: A package manager for AI personalities ("aspects") — like npm for agent personas.
+**What**: A package manager for AI personalities ("aspects") - like npm for agent personas.
 
 **Why**: Let anyone publish and consume aspects without programmer-level knowledge. Mobile apps can specify aspect + version; CLI makes it universal.
 
@@ -22,7 +22,7 @@
 | CLI name       | `aspects`                                                   | Clean, memorable, `npx aspects`                                                                            |
 | Storage        | `~/.aspects/`                                               | App-agnostic, system-level                                                                                 |
 | Registry       | REST API at `aspects.sh/api/v1` with static GitHub fallback | API-first for search/publish; fallback for resilience                                                      |
-| Versioning     | Semver, lock to specific version                            | KISS — no complex resolution                                                                               |
+| Versioning     | Semver, lock to specific version                            | KISS - no complex resolution                                                                               |
 | Schema version | `schemaVersion: 1` in JSON                                  | Future-proofing without complexity                                                                         |
 | Auth           | OAuth2 device flow                                          | No password storage, browser-based, mobile-friendly                                                        |
 | Validation     | Zod schemas with field limits                               | Runtime validation, clear error messages, 50KB max prompt                                                  |
@@ -365,13 +365,13 @@ When the API is unavailable, the CLI falls back to the static GitHub-hosted regi
 
 **Goal**: Full CLI functionality
 
-- [x] `aspects list` — show installed
-- [x] `aspects info <name>` — show details
-- [x] `aspects remove <name>` — uninstall
-- [x] `aspects search [query]` — search registry with filters
-- [x] `aspects update [name]` — update installed
-- [x] `aspects validate` — schema validation
-- [x] `aspects create` — interactive wizard
+- [x] `aspects list` - show installed
+- [x] `aspects info <name>` - show details
+- [x] `aspects remove <name>` - uninstall
+- [x] `aspects search [query]` - search registry with filters
+- [x] `aspects update [name]` - update installed
+- [x] `aspects validate` - schema validation
+- [x] `aspects create` - interactive wizard
 
 ### Phase 6: Registry Bootstrap ✅
 
@@ -465,12 +465,12 @@ When the API is unavailable, the CLI falls back to the static GitHub-hosted regi
 
 **Why these**:
 
-- `@clack/prompts` — beautiful interactive CLI prompts (create wizard)
-- `citty` — unjs CLI framework, cleaner than commander
-- `consola` — pretty logging with levels
-- `ofetch` — modern fetch wrapper with retries
-- `picocolors` — terminal colors (tiny, fast)
-- `zod` — runtime schema validation with clear errors
+- `@clack/prompts` - beautiful interactive CLI prompts (create wizard)
+- `citty` - unjs CLI framework, cleaner than commander
+- `consola` - pretty logging with levels
+- `ofetch` - modern fetch wrapper with retries
+- `picocolors` - terminal colors (tiny, fast)
+- `zod` - runtime schema validation with clear errors
 
 ---
 

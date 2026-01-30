@@ -43,7 +43,7 @@ for (const [alias, canonical] of Object.entries(ALIASES)) {
 // Rewrite aliases in argv before citty parses
 const cmdArg = process.argv[2];
 if (cmdArg && ALIASES[cmdArg]) {
-  process.argv[2] = ALIASES[cmdArg];
+  process.argv[2] = ALIASES[cmdArg]!;
 }
 
 // Command registry with descriptions
@@ -80,6 +80,36 @@ function showCustomHelp() {
   console.log();
   console.log(`${pc.bold(pc.underline("USAGE"))} ${pc.cyan("aspects")} ${pc.dim("<command>")} ${pc.dim("[options]")}`);
   console.log();
+
+  // Quick Start
+  console.log(pc.bold(pc.underline("QUICK START")));
+  console.log();
+  console.log(`  ${pc.cyan("aspects add alaric")}        Install an aspect from the registry`);
+  console.log(`  ${pc.cyan("aspects create")}            Create a new aspect interactively`);
+  console.log(`  ${pc.cyan("aspects search wizard")}     Search for aspects`);
+  console.log();
+
+  // Example workflow
+  console.log(pc.bold(pc.underline("EXAMPLE: CREATE & SHARE (NO ACCOUNT)")));
+  console.log();
+  console.log(`  ${pc.dim("1.")} ${pc.cyan("aspects create my-aspect")}   Create aspect interactively`);
+  console.log(`  ${pc.dim("2.")} ${pc.dim("Edit")} ./my-aspect/aspect.json  ${pc.dim("(customize prompt, add directives)")}`);
+  console.log(`  ${pc.dim("3.")} ${pc.cyan("aspects share ./my-aspect")}  Share to registry, get hash`);
+  console.log(`  ${pc.dim("4.")} ${pc.dim("Share hash with others:")} ${pc.cyan("aspects add blake3:<hash>")}`);
+  console.log();
+
+  // Account vs Anonymous
+  console.log(pc.bold(pc.underline("PUBLISHING OPTIONS")));
+  console.log();
+  console.log(`  ${pc.cyan("aspects share")}             Share anonymously via hash (no account needed)`);
+  console.log(`  ${pc.cyan("aspects login")}             Create account & authenticate`);
+  console.log(`  ${pc.cyan("aspects publish")}           Publish with your name (requires login)`);
+  console.log();
+  console.log(pc.dim(`  Anonymous: Quick sharing, content-addressed by hash`));
+  console.log(pc.dim(`  Logged in: Own names, version updates, edit metadata`));
+  console.log();
+
+  // Commands
   console.log(pc.bold(pc.underline("COMMANDS")));
   console.log();
 
@@ -94,7 +124,18 @@ function showCustomHelp() {
   }
 
   console.log();
-  console.log(`Use ${pc.cyan("aspects <command> --help")} for more info.`);
+
+  // Concepts
+  console.log(pc.bold(pc.underline("CONCEPTS")));
+  console.log();
+  console.log(`  ${pc.bold("Directives")}    Strict MUST-follow rules with priority levels`);
+  console.log(`                Emphasized across all LLM models (XML, bold, repetition)`);
+  console.log();
+  console.log(`  ${pc.bold("Instructions")}  Softer guidance and preferences`);
+  console.log(`                General behavioral hints, not strictly enforced`);
+  console.log();
+
+  console.log(`Use ${pc.cyan("aspects <command> --help")} for detailed command help.`);
   console.log();
 }
 
