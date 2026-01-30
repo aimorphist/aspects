@@ -25,7 +25,7 @@
     "package-manager"
   ],
   "bin": {
-    "aspects": "./dist/cli.js"
+    "aspects": "dist/cli.js"
   },
   "files": [
     "dist"
