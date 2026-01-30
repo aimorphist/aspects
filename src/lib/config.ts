@@ -125,6 +125,36 @@ export async function listAllInstalledAspects(projectRoot?: string): Promise<
   }
 }
 
+/**
+ * Find an aspect across all scopes. Returns array of matches with scope info.
+ */
+export async function findInstalledAspect(
+  name: string,
+  projectRoot?: string,
+): Promise<Array<{ scope: InstallScope } & AspectsConfig["installed"][string]>> {
+  const results: Array<{ scope: InstallScope } & AspectsConfig["installed"][string]> = [];
+  
+  // Check project scope first (if available)
+  if (projectRoot) {
+    try {
+      const projectAspect = await getInstalledAspect(name, 'project', projectRoot);
+      if (projectAspect) {
+        results.push({ scope: 'project', ...projectAspect });
+      }
+    } catch {
+      // Project config might not exist
+    }
+  }
+  
+  // Check global scope
+  const globalAspect = await getInstalledAspect(name, 'global');
+  if (globalAspect) {
+    results.push({ scope: 'global', ...globalAspect });
+  }
+  
+  return results;
+}
+
 // --- Auth helpers ---
 
 /**

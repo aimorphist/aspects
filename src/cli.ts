@@ -21,6 +21,7 @@ import login from "./commands/login";
 import logout from "./commands/logout";
 import share from "./commands/share";
 import unpublish from "./commands/unpublish";
+import config from "./commands/config";
 
 // Alias map: short/alternate names -> canonical command
 const ALIASES: Record<string, string> = {
@@ -44,6 +45,11 @@ for (const [alias, canonical] of Object.entries(ALIASES)) {
 const cmdArg = process.argv[2];
 if (cmdArg && ALIASES[cmdArg]) {
   process.argv[2] = ALIASES[cmdArg]!;
+}
+
+// Default subcommand for commands that need one
+if (process.argv[2] === 'config' && !process.argv[3]) {
+  process.argv.splice(3, 0, 'list');
 }
 
 // Command registry with descriptions
@@ -71,6 +77,7 @@ const COMMANDS: Array<{
   { name: "unpublish", cmd: unpublish, desc: "Unpublish a version from the registry" },
   { name: "login", cmd: login, desc: "Authenticate with the registry" },
   { name: "logout", cmd: logout, desc: "Clear stored authentication tokens" },
+  { name: "config", cmd: config, desc: "View and modify configuration" },
 ];
 
 // Custom help renderer
