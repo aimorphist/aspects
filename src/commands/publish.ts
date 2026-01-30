@@ -2,10 +2,10 @@ import { readFile, stat, readdir } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { defineCommand } from "citty";
 import * as p from "@clack/prompts";
-import { ASPECTS_DIR } from "../utils/paths";
+import { ASPECTS_DIR, findProjectRoot, getAspectPath } from "../utils/paths";
 import { aspectSchema } from "../lib/schema";
 import { publishAspect, ApiClientError } from "../lib/api-client";
-import { getAuth, isLoggedIn } from "../lib/config";
+import { getAuth, isLoggedIn, findInstalledAspect } from "../lib/config";
 import { c, icons } from "../utils/colors";
 
 const MAX_ASPECT_SIZE = 51200; // 50KB
@@ -75,7 +75,27 @@ Don't want an account? Use 'aspects share' instead:
     let aspectPath: string;
 
     if (args.path) {
-      aspectPath = args.path as string;
+      const inputPath = args.path as string;
+      
+      // Check if it's a path that exists
+      try {
+        await stat(inputPath);
+        aspectPath = inputPath;
+      } catch {
+        // Not a valid path - maybe it's an installed aspect name?
+        const projectRoot = await findProjectRoot() || undefined;
+        const installed = await findInstalledAspect(inputPath, projectRoot);
+        
+        if (installed.length > 0) {
+          // Prefer project scope if available
+          const match = installed.find(i => i.scope === 'project') || installed[0]!;
+          aspectPath = getAspectPath(inputPath, match.scope, projectRoot);
+          p.log.info(`Found installed: ${c.aspect(inputPath)} ${c.dim(`[${match.scope}]`)}`);
+        } else {
+          // Fall through - will fail with "Path not found" in validateAspect
+          aspectPath = inputPath;
+        }
+      }
     } else {
       // Scan for aspects and let user choose
       const spinner = p.spinner();
@@ -288,6 +308,30 @@ async function findLocalAspects(): Promise<AspectInfo[]> {
     }
   } catch {
     // Ignore errors
+  }
+
+  // Check project-local .aspects/aspects/
+  const projectRoot = await findProjectRoot();
+  if (projectRoot) {
+    const projectAspectsDir = join(projectRoot, '.aspects', 'aspects');
+    try {
+      const entries = await readdir(projectAspectsDir, { withFileTypes: true });
+      for (const entry of entries) {
+        if (entry.isDirectory()) {
+          const projectAspect = await loadAspectFromPath(
+            join(projectAspectsDir, entry.name)
+          );
+          if (
+            projectAspect &&
+            !aspects.find((a) => a.path === projectAspect.path)
+          ) {
+            aspects.push(projectAspect);
+          }
+        }
+      }
+    } catch {
+      // .aspects/aspects/ might not exist
+    }
   }
 
   // Check ~/.aspects/aspects/

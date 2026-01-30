@@ -43,7 +43,14 @@ Don't want an account? Use 'aspects share' to publish anonymously.`,
     try {
       deviceCode = await initiateDeviceAuth();
     } catch (err) {
-      log.error(`Failed to initiate login: ${(err as Error).message}`);
+      const error = err as Error & { statusCode?: number; errorCode?: string };
+      log.error(`Failed to initiate login: ${error.message}`);
+      if (error.statusCode) {
+        console.log(c.muted(`  Status: ${error.statusCode}`));
+      }
+      if (error.errorCode) {
+        console.log(c.muted(`  Code: ${error.errorCode}`));
+      }
       process.exit(1);
     }
 
@@ -135,14 +142,20 @@ Don't want an account? Use 'aspects share' to publish anonymously.`,
 
 /**
  * Attempt to extract username from a JWT token payload.
- * Returns null if the token is not a valid JWT or doesn't contain a username.
+ * Prefers human-readable identifiers over UUIDs.
  */
 function extractUsernameFromToken(token: string): string | null {
   try {
     const parts = token.split('.');
     if (parts.length !== 3) return null;
     const payload = JSON.parse(Buffer.from(parts[1]!, 'base64url').toString());
-    return payload.username ?? payload.sub ?? payload.preferred_username ?? null;
+    // Prefer email/username over UUID (sub)
+    return payload.preferred_username 
+      ?? payload.email 
+      ?? payload.username 
+      ?? payload.name
+      ?? payload.sub 
+      ?? null;
   } catch {
     return null;
   }

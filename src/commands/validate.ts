@@ -3,6 +3,9 @@ import { join } from "node:path";
 import { defineCommand } from "citty";
 import * as p from "@clack/prompts";
 import { aspectSchema, OFFICIAL_CATEGORIES } from "../lib/schema";
+import { findInstalledAspect } from "../lib/config";
+import { findProjectRoot, getAspectPath } from "../utils/paths";
+import { c } from "../utils/colors";
 
 export default defineCommand({
   meta: {
@@ -57,8 +60,23 @@ Security scan flags patterns like:
         aspectPath = join(aspectPath, "aspect.json");
       }
     } catch {
-      p.log.error(`Path not found: ${aspectPath}`);
-      process.exit(1);
+      // Not a valid path - maybe it's an installed aspect name?
+      if (args.path) {
+        const projectRoot = await findProjectRoot() || undefined;
+        const installed = await findInstalledAspect(args.path, projectRoot);
+        
+        if (installed.length > 0) {
+          const match = installed.find(i => i.scope === 'project') || installed[0]!;
+          aspectPath = join(getAspectPath(args.path, match.scope, projectRoot), 'aspect.json');
+          p.log.info(`Found installed: ${c.aspect(args.path)} ${c.dim(`[${match.scope}]`)}`);
+        } else {
+          p.log.error(`Path not found: ${aspectPath}`);
+          process.exit(1);
+        }
+      } else {
+        p.log.error(`Path not found: ${aspectPath}`);
+        process.exit(1);
+      }
     }
 
     // Read the file
