@@ -76,12 +76,24 @@ npx @morphist/aspects share ./my-aspect
 npx @morphist/aspects add blake3:7kYx3...abc
 ```
 
-### Account vs Anonymous
+### Publishing to Registry
 
-| Method | Command | Benefits |
-|--------|---------|----------|
-| **Anonymous** | `aspects share` | Quick sharing via hash, no account needed |
-| **Logged in** | `aspects publish` | Own your aspect name, version updates, edit metadata |
+Two ways to publish aspects to the public registry:
+
+| Method | Command | Account | Features |
+|--------|---------|---------|----------|
+| **Share** | `aspects share` | No | Quick anonymous sharing via content hash |
+| **Publish** | `aspects publish` | Yes | Claim names, version updates, edit metadata |
+
+```bash
+# Anonymous sharing (no account)
+npx @morphist/aspects share ./my-aspect
+# Output: ✓ Shared! Install with: aspects add blake3:7kYx3...
+
+# Publishing with account
+npx @morphist/aspects login      # Create account or authenticate
+npx @morphist/aspects publish    # Claim name, publish versions
+```
 
 We fully embrace anonymous contributions - but creating an account lets you claim names and publish updates.
 
@@ -434,6 +446,26 @@ bun run scan
 ## License
 
 MIT © [Aspects](https://aspects.sh)
+
+---
+
+## Installing from GitHub
+
+As an alternative to the registry, you can install aspects directly from any GitHub repository:
+
+```bash
+# Install from any GitHub repo containing aspect.json
+npx @morphist/aspects add github:owner/repo
+
+# From a specific branch or tag
+npx @morphist/aspects add github:owner/repo@v1.0.0
+```
+
+This is independent of the registry - great for:
+- Personal aspect collections
+- Organizational/private aspects
+- Forking and customizing existing aspects
+- Git-based version control workflows
 
 ---
 

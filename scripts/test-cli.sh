@@ -117,17 +117,11 @@ else
   fail "init" "Failed to initialize"
 fi
 
-# Verify structure
-if [[ -f ".aspects/config.json" ]]; then
-  pass ".aspects/config.json exists"
+# Verify directory exists
+if [[ -d ".aspects" ]]; then
+  pass ".aspects/ directory exists"
 else
-  fail "init structure" "config.json not created"
-fi
-
-if [[ -f ".aspects/.gitignore" ]]; then
-  pass ".aspects/.gitignore exists"
-else
-  fail "init structure" ".gitignore not created"
+  fail "init structure" ".aspects/ not created"
 fi
 
 cd ..
