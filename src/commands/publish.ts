@@ -162,10 +162,15 @@ Don't want an account? Use 'aspects share' instead:
     if (!dryRun && auth) {
       if (validation.aspect.publisher && validation.aspect.publisher !== auth.username) {
         spinner2.stop("Validation failed");
-        p.log.error(
-          `Publisher mismatch: aspect.json has "${validation.aspect.publisher}" but you are "@${auth.username}"`
-        );
-        p.log.info("Update the publisher field in aspect.json or log in with the correct account.");
+        console.log();
+        p.log.error(`This aspect belongs to "${c.bold(validation.aspect.publisher)}" but you're logged in as "${c.bold(auth.username)}"`);
+        console.log();
+        console.log(c.muted('  To publish under your account:'));
+        console.log(`    Edit the aspect and change ${c.cmd('"publisher"')} to ${c.cmd(`"${auth.username}"`)}`);
+        console.log();
+        console.log(c.muted('  Or to share without claiming ownership:'));
+        console.log(`    ${c.cmd(`aspects share ${validation.aspect.name}`)}`);
+        console.log();
         process.exit(1);
       }
       // Auto-set publisher from auth context if not specified
