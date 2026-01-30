@@ -22,6 +22,7 @@ import logout from "./commands/logout";
 import share from "./commands/share";
 import unpublish from "./commands/unpublish";
 import config from "./commands/config";
+import init from "./commands/init";
 
 // Alias map: short/alternate names -> canonical command
 const ALIASES: Record<string, string> = {
@@ -59,6 +60,7 @@ const COMMANDS: Array<{
   desc: string;
   aliases?: string[];
 }> = [
+  { name: "init", cmd: init, desc: "Initialize project for local aspects" },
   { name: "create", cmd: create, desc: "Create a new aspect interactively", aliases: ["c", "new", "n"] },
   { name: "add", cmd: add, desc: "Install aspect(s) to your local library", aliases: ["install", "get", "a", "i", "g"] },
   { name: "list", cmd: list, desc: "List installed aspects" },

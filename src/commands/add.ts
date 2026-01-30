@@ -1,8 +1,10 @@
 import { defineCommand } from "citty";
+import * as p from "@clack/prompts";
 import { parseInstallSpec } from "../lib/resolver";
 import { installAspect } from "../lib/installer";
 import { c, icons } from "../utils/colors";
-import { findProjectRoot, getDefaultScope, type InstallScope } from "../utils/paths";
+import { findProjectRoot, type InstallScope } from "../utils/paths";
+import { initProjectAspects } from "./init";
 
 export default defineCommand({
   meta: {
@@ -19,10 +21,12 @@ Sources:
 Scope:
   By default, installs to ./.aspects/ if in a project, else ~/.aspects/
   Use -g/--global to always install to ~/.aspects/
+  Use -p/--project to install locally (will prompt to init if needed)
 
 Examples:
   aspects add alaric meditation-guide    Install multiple aspects
   aspects add -g alaric                  Install globally
+  aspects add -p alaric                  Install to project (init if needed)
   aspects add --force alaric             Overwrite existing`,
   },
   args: {
@@ -40,6 +44,11 @@ Examples:
       alias: "g",
       description: "Install to global scope (~/.aspects) instead of project",
     },
+    project: {
+      type: "boolean",
+      alias: "p",
+      description: "Install to project scope (init if needed)",
+    },
   },
   async run({ args }) {
     const specs = Array.isArray(args.specs) ? args.specs : [args.specs];
@@ -50,6 +59,27 @@ Examples:
 
     if (args.global) {
       scope = 'global';
+    } else if (args.project) {
+      // Explicit project scope - check if initialized
+      projectRoot = await findProjectRoot() || undefined;
+      if (!projectRoot) {
+        // No project found - offer to init
+        console.log();
+        const init = await p.confirm({
+          message: `No ${c.file('.aspects/')} found. Initialize project here?`,
+        });
+
+        if (p.isCancel(init) || !init) {
+          console.log(c.muted('  Falling back to global scope'));
+          scope = 'global';
+        } else {
+          projectRoot = await initProjectAspects();
+          console.log(`${icons.success} Initialized ${c.file('.aspects/')}`);
+          scope = 'project';
+        }
+      } else {
+        scope = 'project';
+      }
     } else {
       projectRoot = await findProjectRoot() || undefined;
       scope = projectRoot ? 'project' : 'global';
