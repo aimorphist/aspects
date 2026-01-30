@@ -110,15 +110,18 @@ function showCustomHelp() {
   console.log(`  ${pc.dim("4.")} ${pc.dim("Share hash with others:")} ${pc.cyan("aspects add blake3:<hash>")}`);
   console.log();
 
-  // Account vs Anonymous
-  console.log(pc.bold(pc.underline("PUBLISHING OPTIONS")));
+  // Publishing Options
+  console.log(pc.bold(pc.underline("PUBLISHING")));
   console.log();
-  console.log(`  ${pc.cyan("aspects share")}             Share anonymously via hash (no account needed)`);
-  console.log(`  ${pc.cyan("aspects login")}             Create account & authenticate`);
-  console.log(`  ${pc.cyan("aspects publish")}           Publish with your name (requires login)`);
+  console.log(`  ${pc.cyan("aspects share")}     ${pc.dim("No account")} - Share via content hash`);
+  console.log(`                    Anyone installs with: ${pc.cyan("aspects add blake3:<hash>")}`);
+  console.log(`                    Quick, anonymous, no versioning`);
   console.log();
-  console.log(pc.dim(`  Anonymous: Quick sharing, content-addressed by hash`));
-  console.log(pc.dim(`  Logged in: Own names, version updates, edit metadata`));
+  console.log(`  ${pc.cyan("aspects publish")}   ${pc.dim("Account required")} - Claim a name`);
+  console.log(`                    Anyone installs with: ${pc.cyan("aspects add <name>")}`);
+  console.log(`                    Versioning, updates, publisher reputation`);
+  console.log();
+  console.log(`  ${pc.cyan("aspects login")}     Create account or authenticate`);
   console.log();
 
   // Commands

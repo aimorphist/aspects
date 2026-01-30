@@ -48,6 +48,7 @@
     "validate": "bun run scripts/validate-pr.ts",
     "scan": "bun run scripts/security-scan.ts",
     "test": "bun test tests/unit",
+    "test:e2e": "./scripts/test-cli.sh",
     "test:unit": "bun test tests/unit",
     "test:integration": "ASPECTS_REGISTRY_URL=http://localhost:5173/api/v1 bun test tests/integration",
     "test:all": "bun test tests"
