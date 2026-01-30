@@ -33,36 +33,76 @@ function detectModelFamily(model: string): ModelFamily {
 
 function formatDirectivesForModel(
   directives: Array<{ id: string; rule: string; priority: string }>,
-  family: ModelFamily
+  family: ModelFamily,
+  options?: { isReminder?: boolean }
 ): string {
   if (directives.length === 0) return "";
 
   const isModern = family === "claude-modern" || family === "gpt-modern" || family === "unknown";
+  const isReminder = options?.isReminder ?? false;
 
   if (isModern) {
     // XML format for modern models
+    const tagName = isReminder ? "critical-reminders" : "directives";
     const rules = directives
       .map((d) => `  <rule id="${d.id}" priority="${d.priority}">${d.rule}</rule>`)
       .join("\n");
-    return `<rules>\n${rules}\n</rules>\n\n`;
+    
+    if (isReminder) {
+      return `<!-- Universal Pattern: High-priority directives repeated here for cross-LLM compatibility.
+     Claude weights prompt beginning; GPT weights prompt end. Repetition ensures emphasis on both. -->
+<${tagName}>\n${rules}\n</${tagName}>\n`;
+    }
+    return `<${tagName}>\n${rules}\n</${tagName}>\n\n`;
   }
   
   // Markdown format for legacy models
+  let output = "";
+  
+  if (isReminder) {
+    output += "<!-- Note: Critical directives repeated below for cross-model compatibility -->\n";
+    output += "## Critical Reminders\n\n";
+  }
+
   const highPriority = directives.filter((d) => d.priority === "high");
   const otherPriority = directives.filter((d) => d.priority !== "high");
-
-  let output = "";
 
   for (const d of highPriority) {
     output += `**IMPORTANT**: ${d.rule}\n\n`;
   }
 
-  if (otherPriority.length > 0) {
+  if (!isReminder && otherPriority.length > 0) {
     for (const d of otherPriority) {
       output += `- ${d.rule}\n`;
     }
     output += "\n";
   }
+
+  return output;
+}
+
+function formatInstructionsForModel(
+  instructions: Array<{ id: string; rule: string }>,
+  family: ModelFamily
+): string {
+  if (instructions.length === 0) return "";
+
+  const isModern = family === "claude-modern" || family === "gpt-modern" || family === "unknown";
+
+  if (isModern) {
+    // XML format for modern models
+    const rules = instructions
+      .map((i) => `  <guideline id="${i.id}">${i.rule}</guideline>`)
+      .join("\n");
+    return `<instructions>\n${rules}\n</instructions>\n\n`;
+  }
+  
+  // Markdown format for legacy models
+  let output = "## Guidelines\n\n";
+  for (const i of instructions) {
+    output += `- ${i.rule}\n`;
+  }
+  output += "\n";
 
   return output;
 }
@@ -154,9 +194,9 @@ export default defineCommand({
       p.log.info(`Model family: ${family}`);
     }
 
-    // Collect directives (placeholder - aspects don't have directives in current schema)
-    // This is for future expansion when directives are added
-    const directives: Array<{ id: string; rule: string; priority: string }> = [];
+    // Collect directives and instructions from aspect
+    const directives: Array<{ id: string; rule: string; priority: string }> = aspect.directives || [];
+    const instructions: Array<{ id: string; rule: string }> = aspect.instructions || [];
 
     // Check for mode
     let modeInfo: { description: string; critical?: string } | null = null;
@@ -182,12 +222,19 @@ export default defineCommand({
       p.log.info("");
     }
 
-    // Build compiled prompt
+    // Build compiled prompt with Universal Pattern:
+    // - Directives at START (Claude weights beginning)
+    // - Directives repeated at END (GPT weights end)
     let compiled = "";
 
-    // Add directives section
+    // Add directives section at START
     if (directives.length > 0) {
       compiled += formatDirectivesForModel(directives, family);
+    }
+
+    // Add instructions section
+    if (instructions.length > 0) {
+      compiled += formatInstructionsForModel(instructions, family);
     }
 
     // Add mode critical section if present
@@ -201,6 +248,14 @@ export default defineCommand({
 
     // Add main prompt
     compiled += aspect.prompt;
+
+    // Universal Pattern: Repeat high-priority directives at END
+    // This ensures emphasis on both Claude (beginning-weighted) and GPT (end-weighted)
+    const highPriorityDirectives = directives.filter(d => d.priority === "high");
+    if (highPriorityDirectives.length > 0) {
+      compiled += "\n\n";
+      compiled += formatDirectivesForModel(highPriorityDirectives, family, { isReminder: true });
+    }
 
     // Add voice hints as comment for reference
     if (aspect.voiceHints && args.verbose) {
