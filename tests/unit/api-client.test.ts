@@ -239,7 +239,7 @@ describe("api-client", () => {
 
       const result = await getAspectByHash("abc123base64hash");
       expect(result.name).toBe("alaric");
-      expect(ofetchCalls[0]!.url).toContain("/aspects/by-hash/");
+      expect(ofetchCalls[0]!.url).toContain("/aspects/blob/");
     });
   });
 

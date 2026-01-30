@@ -1,4 +1,4 @@
-import { mkdir, writeFile, readFile, stat, access } from 'node:fs/promises';
+import { mkdir, writeFile, stat, access } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { ofetch } from 'ofetch';
 import type { InstallSpec, Aspect } from './types';
@@ -6,7 +6,7 @@ import { parseAspectJson, parseAspectFile } from './parser';
 import { getRegistryAspect, fetchAspectVersion, fetchAspectByHash } from './registry';
 import { addInstalledAspect, getInstalledAspect } from './config';
 import { getAspectPath, ensureAspectsDir, type InstallScope } from '../utils/paths';
-import { blake3Hash } from '../utils/hash';
+import { blake3HashAspect } from '../utils/hash';
 import { log } from '../utils/logger';
 
 const ASPECT_FILENAME = 'aspect.json';
@@ -16,6 +16,7 @@ export interface InstallOptions {
   force?: boolean;
   scope?: InstallScope;
   projectRoot?: string;
+  specifier?: string;  // Original user input for display/reinstall
 }
 
 export type InstallResult =
@@ -119,13 +120,19 @@ async function installFromRegistryApi(
   const content = JSON.stringify(aspect, null, 2);
   await writeFile(join(aspectDir, ASPECT_FILENAME), content);
 
-  // Update config
-  const hash = versionData.blake3 || blake3Hash(content);
+  // Update config with new schema
+  const hash = versionData.blake3 || blake3HashAspect(aspect);
+  const publisher = aspect.publisher;
+  const trust = publisher ? 'community' : undefined; // TODO: get trust from API response
+  
   await addInstalledAspect(name, {
     version: aspect.version,
-    source: 'registry',
     installedAt: new Date().toISOString(),
     blake3: hash,
+    source: 'registry',
+    trust: trust ?? 'community',
+    publisher,
+    specifier: options?.specifier ?? (publisher ? `${publisher}/${name}` : name),
   }, scope, projectRoot);
 
   return { success: true, aspect, source: 'registry' };
@@ -215,13 +222,19 @@ async function installFromRegistryLegacy(
   await mkdir(aspectDir, { recursive: true });
   await writeFile(join(aspectDir, ASPECT_FILENAME), content);
 
-  // Update config
-  const hash = blake3Hash(content);
+  // Update config with new schema
+  const hash = blake3HashAspect(aspect);
+  const publisher = aspect.publisher;
+  const trust = registryAspect.metadata.trust ?? 'community';
+  
   await addInstalledAspect(name, {
     version: aspect.version,
-    source: 'registry',
     installedAt: new Date().toISOString(),
     blake3: hash,
+    source: 'registry',
+    trust,
+    publisher,
+    specifier: options?.specifier ?? (publisher ? `${publisher}/${name}` : name),
   }, scope, projectRoot);
 
   return { success: true, aspect, source: 'registry' };
@@ -279,11 +292,12 @@ async function installFromGitHub(
   const aspect = parseResult.aspect;
 
   // Check if already installed at same ref (unless force)
+  const hash = blake3HashAspect(aspect);
   if (!options?.force) {
     const existing = await getInstalledAspect(aspect.name, scope, projectRoot);
-    if (existing && existing.source === 'github' && existing.githubRef === targetRef) {
+    if (existing && existing.source === 'github' && existing.githubRef === `${owner}/${repo}@${targetRef}`) {
       const existingAspect = await loadAspectFromPath(getAspectPath(aspect.name, scope, projectRoot));
-      if (existingAspect && existing.blake3 === blake3Hash(content)) {
+      if (existingAspect && existing.blake3 === hash) {
         return { success: true, aspect: existingAspect, source: 'github', alreadyInstalled: true };
       }
     }
@@ -295,14 +309,16 @@ async function installFromGitHub(
   await mkdir(aspectDir, { recursive: true });
   await writeFile(join(aspectDir, ASPECT_FILENAME), content);
 
-  // Update config
-  const hash = blake3Hash(content);
+  // Update config with new schema
+  const specifier = options?.specifier ?? `github:${owner}/${repo}@${targetRef}`;
   await addInstalledAspect(aspect.name, {
     version: aspect.version,
-    source: 'github',
     installedAt: new Date().toISOString(),
     blake3: hash,
-    githubRef: targetRef,
+    source: 'github',
+    trust: 'github',
+    githubRef: `${owner}/${repo}@${targetRef}`,
+    specifier,
   }, scope, projectRoot);
 
   return { success: true, aspect, source: 'github' };
@@ -351,9 +367,8 @@ async function installFromLocal(
 
   const aspect = parseResult.aspect;
 
-  // Read content for hash
-  const content = await readFile(filePath, 'utf-8');
-  const hash = blake3Hash(content);
+  // Compute canonical hash
+  const hash = blake3HashAspect(aspect);
 
   const scope = options?.scope ?? 'global';
   const projectRoot = options?.projectRoot;
@@ -361,18 +376,20 @@ async function installFromLocal(
   // Check if already installed from same path (unless force)
   if (!options?.force) {
     const existing = await getInstalledAspect(aspect.name, scope, projectRoot);
-    if (existing && existing.path === aspectDir && existing.blake3 === hash) {
+    if (existing && existing.localPath === aspectDir && existing.blake3 === hash) {
       return { success: true, aspect, source: 'local', alreadyInstalled: true };
     }
   }
 
-  // Register in config (don't copy files)
+  // Register in config (don't copy files, just link)
   await addInstalledAspect(aspect.name, {
     version: aspect.version,
-    source: 'local',
     installedAt: new Date().toISOString(),
     blake3: hash,
-    path: aspectDir,
+    source: 'local',
+    trust: 'local',
+    localPath: aspectDir,
+    specifier: options?.specifier ?? path,
   }, scope, projectRoot);
 
   return { success: true, aspect, source: 'local' };
@@ -421,11 +438,15 @@ async function installFromHash(
   const content = JSON.stringify(aspect, null, 2);
   await writeFile(join(aspectDir, ASPECT_FILENAME), content);
 
+  // Anonymous/hash-based install - no publisher, trust based on content-addressing
   await addInstalledAspect(aspect.name, {
     version: aspect.version,
-    source: 'registry',
     installedAt: new Date().toISOString(),
-    blake3: versionData.blake3 || blake3Hash(content),
+    blake3: versionData.blake3 || blake3HashAspect(aspect),
+    source: 'registry',
+    trust: 'community',  // Content-addressed but from registry
+    // No publisher - anonymous
+    specifier: options?.specifier ?? `blake3:${hash}`,
   }, scope, projectRoot);
 
   return { success: true, aspect, source: 'registry' };

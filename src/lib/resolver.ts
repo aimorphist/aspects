@@ -5,18 +5,20 @@ import type { InstallSpec } from './types';
  * Parse an install spec string into a typed InstallSpec.
  * 
  * Examples:
- *   "alaric"           → { type: 'registry', name: 'alaric' }
- *   "alaric@1.0.0"     → { type: 'registry', name: 'alaric', version: '1.0.0' }
- *   "@scope/name"      → { type: 'registry', name: '@scope/name' }
- *   "hash:<blake3>"    → { type: 'hash', hash: '<blake3>' }
- *   "github:user/repo" → { type: 'github', owner: 'user', repo: 'repo' }
- *   "./path"           → { type: 'local', path: '/abs/path' }
- *   "/abs/path"        → { type: 'local', path: '/abs/path' }
+ *   "alaric"              → { type: 'registry', name: 'alaric' }
+ *   "alaric@1.0.0"        → { type: 'registry', name: 'alaric', version: '1.0.0' }
+ *   "morphist/alaric"     → { type: 'registry', name: 'alaric', publisher: 'morphist' }
+ *   "morphist/alaric@1.0" → { type: 'registry', name: 'alaric', publisher: 'morphist', version: '1.0' }
+ *   "blake3:<hash>"       → { type: 'hash', hash: '<hash>' }
+ *   "hash:<hash>"         → { type: 'hash', hash: '<hash>' } (alias)
+ *   "github:user/repo"    → { type: 'github', owner: 'user', repo: 'repo' }
+ *   "./path"              → { type: 'local', path: '/abs/path' }
+ *   "/abs/path"           → { type: 'local', path: '/abs/path' }
  */
 export function parseInstallSpec(spec: string): InstallSpec {
-  // Hash-based (content-addressed)
-  if (spec.startsWith('hash:')) {
-    const hash = spec.slice(5);
+  // Hash-based (content-addressed) - support both "blake3:" and "hash:" prefixes
+  if (spec.startsWith('blake3:') || spec.startsWith('hash:')) {
+    const hash = spec.startsWith('blake3:') ? spec.slice(7) : spec.slice(5);
     if (hash.length < 16) {
       throw new Error(`Invalid hash spec: ${spec}. Hash must be at least 16 characters.`);
     }
@@ -45,32 +47,46 @@ export function parseInstallSpec(spec: string): InstallSpec {
     return { type: 'local', path: absolutePath };
   }
 
-  // Registry (with optional @version)
-  // Handle scoped packages: @scope/name@version
+  // Registry: qualified (publisher/name) or unqualified (name)
+  // Format: [publisher/]name[@version]
   let name: string;
+  let publisher: string | undefined;
   let version: string | undefined;
 
-  if (spec.startsWith('@')) {
-    // Scoped: @scope/name or @scope/name@version
-    const lastAtIndex = spec.lastIndexOf('@');
-    if (lastAtIndex > 0 && spec.indexOf('/') < lastAtIndex) {
-      // Has version: @scope/name@1.0.0
-      name = spec.slice(0, lastAtIndex);
-      version = spec.slice(lastAtIndex + 1);
-    } else {
-      // No version: @scope/name
-      name = spec;
-    }
+  // Split off version first (last @)
+  const atIndex = spec.lastIndexOf('@');
+  let nameWithPublisher: string;
+  if (atIndex > 0) {
+    nameWithPublisher = spec.slice(0, atIndex);
+    version = spec.slice(atIndex + 1);
   } else {
-    // Unscoped: name or name@version
-    const atIndex = spec.indexOf('@');
-    if (atIndex > 0) {
-      name = spec.slice(0, atIndex);
-      version = spec.slice(atIndex + 1);
-    } else {
-      name = spec;
-    }
+    nameWithPublisher = spec;
   }
 
-  return { type: 'registry', name, version };
+  // Check for qualified name (publisher/name or @publisher/name)
+  const slashIndex = nameWithPublisher.indexOf('/');
+  if (slashIndex > 0) {
+    publisher = nameWithPublisher.slice(0, slashIndex);
+    // Strip leading @ from publisher (npm-style compat)
+    if (publisher.startsWith('@')) {
+      publisher = publisher.slice(1);
+    }
+    name = nameWithPublisher.slice(slashIndex + 1);
+    if (!name) {
+      throw new Error(`Invalid spec: ${spec}. Expected publisher/name format.`);
+    }
+  } else {
+    name = nameWithPublisher;
+  }
+
+  return { type: 'registry', name, publisher, version };
+}
+
+/**
+ * Format a registry spec back to string form.
+ */
+export function formatRegistrySpec(name: string, publisher?: string, version?: string): string {
+  let spec = publisher ? `${publisher}/${name}` : name;
+  if (version) spec += `@${version}`;
+  return spec;
 }
