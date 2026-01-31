@@ -17,11 +17,11 @@ export default defineCommand({
       return;
     }
 
-    const username = auth.username;
+    const handle = auth.defaultHandle;
     await clearAuth();
 
     console.log();
-    console.log(`${icons.success} Logged out${username ? ` from @${username}` : ''}`);
+    console.log(`${icons.success} Logged out${handle ? ` from @${handle}` : ''}`);
     console.log(c.muted('  Auth tokens removed from ~/.aspects/config.json'));
     console.log();
   },

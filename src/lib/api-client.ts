@@ -13,6 +13,10 @@ import type {
   ApiDevicePoll,
   ApiStats,
   ApiCategories,
+  ApiAccount,
+  ApiHandleClaimResponse,
+  ApiHandleAvailability,
+  ApiHandleInfo,
 } from './types';
 
 // --- Cache ---
@@ -302,5 +306,53 @@ export async function pollDeviceAuth(
     body: JSON.stringify({ device_code: deviceCode, code_verifier: codeVerifier }),
     timeout: TIMEOUT_MS,
     parseResponse: JSON.parse,
+  });
+}
+
+// --- Account & Handle APIs ---
+
+/**
+ * GET /account - Get current user's account info (auth required)
+ */
+export async function getAccount(): Promise<ApiAccount> {
+  return apiFetch<ApiAccount>('/account', { auth: true });
+}
+
+/**
+ * POST /handles - Claim a new handle (auth required)
+ */
+export async function claimHandle(
+  name: string,
+  displayName?: string,
+): Promise<ApiHandleClaimResponse> {
+  return apiFetch<ApiHandleClaimResponse>('/handles', {
+    method: 'POST',
+    body: { name, display_name: displayName },
+    auth: true,
+  });
+}
+
+/**
+ * GET /handles/:name/available - Check handle availability (public)
+ */
+export async function checkHandleAvailability(name: string): Promise<ApiHandleAvailability> {
+  return apiFetch<ApiHandleAvailability>(`/handles/${encodeURIComponent(name)}/available`);
+}
+
+/**
+ * GET /handles/:name - Get public handle info
+ */
+export async function getHandleInfo(name: string): Promise<ApiHandleInfo> {
+  return apiFetch<ApiHandleInfo>(`/handles/${encodeURIComponent(name)}`);
+}
+
+/**
+ * PUT /account/default-handle - Set default publishing handle (auth required)
+ */
+export async function setDefaultHandleApi(handle: string): Promise<void> {
+  await apiFetch<{ ok: true }>('/account/default-handle', {
+    method: 'PUT',
+    body: { handle },
+    auth: true,
   });
 }

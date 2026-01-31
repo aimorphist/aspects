@@ -1,6 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { CONFIG_PATH, ensureAspectsDir, getConfigPath, type InstallScope } from "../utils/paths";
-import type { AspectsConfig, AuthTokens } from "./types";
+import type { AspectsConfig, AuthTokens, HandleInfo } from "./types";
 
 const DEFAULT_REGISTRY_API_URL = "https://aspects.sh/api/v1";
 
@@ -214,4 +214,76 @@ export async function clearAuth(): Promise<void> {
   const config = await readConfig();
   delete config.auth;
   await writeConfig(config);
+}
+
+// --- Handle helpers ---
+
+/**
+ * Get the default handle for publishing, or null if not logged in.
+ */
+export async function getDefaultHandle(): Promise<string | null> {
+  const auth = await getAuth();
+  return auth?.defaultHandle ?? null;
+}
+
+/**
+ * Get all handles the user has access to.
+ */
+export async function getHandles(): Promise<HandleInfo[]> {
+  const auth = await getAuth();
+  return auth?.handles ?? [];
+}
+
+/**
+ * Update the default handle in local config.
+ */
+export async function setDefaultHandle(handle: string): Promise<void> {
+  const config = await readConfig();
+  if (!config.auth) {
+    throw new Error('Not logged in');
+  }
+
+  // Verify handle exists in user's list
+  const hasHandle = config.auth.handles.some(h => h.name === handle);
+  if (!hasHandle) {
+    throw new Error(`You don't have access to handle @${handle}`);
+  }
+
+  // Update default flags
+  config.auth.handles = config.auth.handles.map(h => ({
+    ...h,
+    default: h.name === handle,
+  }));
+  config.auth.defaultHandle = handle;
+
+  await writeConfig(config);
+}
+
+/**
+ * Update handles list from API response.
+ */
+export async function updateHandles(handles: HandleInfo[]): Promise<void> {
+  const config = await readConfig();
+  if (!config.auth) {
+    throw new Error('Not logged in');
+  }
+
+  config.auth.handles = handles;
+
+  // Update defaultHandle if current default is no longer in list
+  const defaultStillExists = handles.some(h => h.name === config.auth!.defaultHandle);
+  if (!defaultStillExists) {
+    const newDefault = handles.find(h => h.default) ?? handles[0];
+    config.auth.defaultHandle = newDefault?.name ?? '';
+  }
+
+  await writeConfig(config);
+}
+
+/**
+ * Check if user has permission to publish under a specific handle.
+ */
+export async function hasHandlePermission(handle: string): Promise<boolean> {
+  const handles = await getHandles();
+  return handles.some(h => h.name === handle);
 }

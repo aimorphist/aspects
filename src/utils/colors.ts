@@ -31,6 +31,7 @@ export const icons = {
   error: pc.red('✗'),
   warn: pc.yellow('⚠'),
   info: pc.blue('ℹ'),
+  working: pc.cyan('◌'),
   arrow: pc.dim('→'),
   bullet: pc.dim('•'),
   sparkle: '✨',

@@ -5,7 +5,7 @@ import * as p from "@clack/prompts";
 import { ASPECTS_DIR, findProjectRoot, getAspectPath } from "../utils/paths";
 import { aspectSchema } from "../lib/schema";
 import { publishAspect, ApiClientError } from "../lib/api-client";
-import { getAuth, isLoggedIn, findInstalledAspect } from "../lib/config";
+import { getAuth, isLoggedIn, findInstalledAspect, getDefaultHandle, getHandles, hasHandlePermission } from "../lib/config";
 import { c, icons } from "../utils/colors";
 
 const MAX_ASPECT_SIZE = 51200; // 50KB
@@ -160,22 +160,38 @@ Don't want an account? Use 'aspects share' instead:
     // Check/set publisher from auth (unless dry-run)
     const auth = await getAuth();
     if (!dryRun && auth) {
-      if (validation.aspect.publisher && validation.aspect.publisher !== auth.username) {
-        spinner2.stop("Validation failed");
-        console.log();
-        p.log.error(`This aspect belongs to "${c.bold(validation.aspect.publisher)}" but you're logged in as "${c.bold(auth.username)}"`);
-        console.log();
-        console.log(c.muted('  To publish under your account:'));
-        console.log(`    Edit the aspect and change ${c.cmd('"publisher"')} to ${c.cmd(`"${auth.username}"`)}`);
-        console.log();
-        console.log(c.muted('  Or to share without claiming ownership:'));
-        console.log(`    ${c.cmd(`aspects share ${validation.aspect.name}`)}`);
-        console.log();
-        process.exit(1);
-      }
-      // Auto-set publisher from auth context if not specified
-      if (!validation.aspect.publisher) {
-        validation.aspect.publisher = auth.username;
+      const defaultHandle = await getDefaultHandle();
+      const handles = await getHandles();
+
+      if (validation.aspect.publisher) {
+        // Check if user has permission to publish under this handle
+        const hasPermission = await hasHandlePermission(validation.aspect.publisher);
+        if (!hasPermission) {
+          spinner2.stop("Validation failed");
+          console.log();
+          p.log.error(`You don't have permission to publish under @${c.bold(validation.aspect.publisher)}`);
+          console.log();
+          console.log(c.muted('  Your handles:'));
+          for (const h of handles) {
+            const isDefault = h.name === defaultHandle;
+            console.log(`    @${h.name}${isDefault ? c.dim(' (default)') : ''}`);
+          }
+          console.log();
+          console.log(c.muted('  Either:'));
+          console.log(`    1. Change "publisher" in aspect.json to one of your handles`);
+          console.log(`    2. Get added as a member to @${validation.aspect.publisher} (via web UI)`);
+          console.log(`    3. Use ${c.cmd('aspects share')} for anonymous publishing`);
+          console.log();
+          process.exit(1);
+        }
+      } else {
+        // Auto-set publisher from default handle
+        if (!defaultHandle) {
+          spinner2.stop("Validation failed");
+          p.log.error('No default handle set. Run "aspects handle claim <name>" first.');
+          process.exit(1);
+        }
+        validation.aspect.publisher = defaultHandle;
       }
     }
 
@@ -216,9 +232,10 @@ Don't want an account? Use 'aspects share' instead:
 
     try {
       const parsed = JSON.parse(validation.content);
-      // Inject publisher from auth if not in the file
-      if (auth && !parsed.publisher) {
-        parsed.publisher = auth.username;
+      // Inject publisher from default handle if not in the file
+      const defaultHandle = await getDefaultHandle();
+      if (defaultHandle && !parsed.publisher) {
+        parsed.publisher = defaultHandle;
       }
       const result = await publishAspect(parsed);
       spinner3.stop("Published");
@@ -244,6 +261,10 @@ Don't want an account? Use 'aspects share' instead:
         } else if (err.errorCode === 'unauthorized') {
           p.log.info("");
           p.log.info('Run "aspects login" to authenticate');
+        } else if (err.errorCode === 'no_permission') {
+          p.log.info("");
+          p.log.info("You don't have permission to publish under this handle");
+          p.log.info('Run "aspects handle list" to see your handles');
         }
       } else {
         p.log.error(`Publish failed: ${(err as Error).message}`);

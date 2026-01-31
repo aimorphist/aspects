@@ -69,11 +69,22 @@ export interface AspectsConfig {
   auth?: AuthTokens;
 }
 
+/**
+ * Handle information including role and default status
+ */
+export interface HandleInfo {
+  name: string;
+  role: 'owner' | 'admin' | 'member';
+  default: boolean;
+}
+
 export interface AuthTokens {
   accessToken: string;
   refreshToken?: string;
   expiresAt: string;
-  username: string;
+  accountId: string;           // UUID from registry
+  handles: HandleInfo[];       // All handles user has access to
+  defaultHandle: string;       // The handle to use for publishing
 }
 
 /**
@@ -248,6 +259,11 @@ export interface ApiDevicePoll {
   refresh_token?: string;
   token_type?: string;
   expires_in?: number;
+  account?: {
+    id: string;
+    handles: HandleInfo[];
+    needs_handle: boolean;
+  };
 }
 
 export interface ApiStats {
@@ -264,4 +280,35 @@ export interface ApiCategories {
     name: string;
     description: string;
   }>;
+}
+
+// --- Account & Handle API Types ---
+
+export interface ApiAccount {
+  id: string;
+  handles: HandleInfo[];
+  owned_handle_count: number;
+  max_owned_handles: number;
+  created_at: string;
+}
+
+export interface ApiHandleClaimResponse {
+  ok: true;
+  name: string;
+  display_name?: string;
+  created_at: string;
+}
+
+export interface ApiHandleAvailability {
+  name: string;
+  available: boolean;
+  reason?: string; // If unavailable: "taken", "reserved", "invalid"
+}
+
+export interface ApiHandleInfo {
+  name: string;
+  display_name?: string;
+  verified: boolean;
+  created_at: string;
+  aspect_count: number;
 }

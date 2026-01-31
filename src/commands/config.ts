@@ -84,7 +84,7 @@ const listCommand = defineCommand({
     console.log();
     console.log(c.bold('  Auth'));
     if (auth) {
-      console.log(`    ${c.label('logged in as')} ${auth.username}`);
+      console.log(`    ${c.label('logged in as')} @${auth.defaultHandle}`);
       const expiresAt = new Date(auth.expiresAt);
       const isExpired = expiresAt < new Date();
       if (isExpired) {

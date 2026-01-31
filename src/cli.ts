@@ -26,6 +26,8 @@ import share from "./commands/share";
 import unpublish from "./commands/unpublish";
 import config from "./commands/config";
 import init from "./commands/init";
+import handle from "./commands/handle";
+import whoami from "./commands/whoami";
 
 // Alias map: short/alternate names -> canonical command
 const ALIASES: Record<string, string> = {
@@ -37,6 +39,7 @@ const ALIASES: Record<string, string> = {
   a: "add",
   i: "add",
   g: "add",
+  h: "handle",
 };
 
 // Reverse map: canonical -> list of aliases
@@ -53,6 +56,9 @@ if (cmdArg && ALIASES[cmdArg]) {
 
 // Default subcommand for commands that need one
 if (process.argv[2] === 'config' && !process.argv[3]) {
+  process.argv.splice(3, 0, 'list');
+}
+if (process.argv[2] === 'handle' && !process.argv[3]) {
   process.argv.splice(3, 0, 'list');
 }
 
@@ -82,6 +88,8 @@ const COMMANDS: Array<{
   { name: "unpublish", cmd: unpublish, desc: "Unpublish a version from the registry" },
   { name: "login", cmd: login, desc: "Authenticate with the registry" },
   { name: "logout", cmd: logout, desc: "Clear stored authentication tokens" },
+  { name: "handle", cmd: handle, desc: "Manage your handles (namespaces)", aliases: ["h"] },
+  { name: "whoami", cmd: whoami, desc: "Show your current identity" },
   { name: "config", cmd: config, desc: "View and modify configuration" },
 ];
 
