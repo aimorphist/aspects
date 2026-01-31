@@ -1,7 +1,6 @@
 import { defineCommand } from 'citty';
 import { log } from '../utils/logger';
-import { loadInstalledAspect } from '../lib/aspect-loader';
-import { getInstalledAspect } from '../lib/config';
+import { findAndLoadAspect } from '../lib/aspect-loader';
 import { getAspectDetail } from '../lib/registry';
 import { c, icons } from '../utils/colors';
 
@@ -18,30 +17,27 @@ export default defineCommand({
     },
   },
   async run({ args }) {
-    const installed = await getInstalledAspect(args.name);
+    // Search both project and global scopes
+    const found = await findAndLoadAspect(args.name);
 
     // If installed locally, show local info
-    if (installed) {
-      const aspect = await loadInstalledAspect(args.name);
-      if (!aspect) {
-        log.error(`Failed to load aspect "${args.name}" - aspect.json may be corrupted`);
-        process.exit(1);
-      }
+    if (found) {
+      const { aspect, scope, meta: installMeta } = found;
 
       console.log();
-      console.log(`${c.bold(aspect.displayName)} ${c.muted('(')}${c.aspect(aspect.name)}${c.version(`@${aspect.version}`)}${c.muted(')')}`);
+      console.log(`${c.bold(aspect.displayName)} ${c.muted('(')}${c.aspect(aspect.name)}${c.version(`@${aspect.version}`)}${c.muted(')')} ${c.dim(`[${scope}]`)}`);
       console.log();
       console.log(`  ${c.italic(aspect.tagline)}`);
       console.log();
 
-      const meta: [string, string][] = [];
-      if (aspect.publisher) meta.push(['Publisher', aspect.publisher]);
-      if (aspect.author) meta.push(['Author', aspect.author]);
-      if (aspect.license) meta.push(['License', aspect.license]);
-      meta.push(['Source', installed.source]);
+      const displayMeta: [string, string][] = [];
+      if (aspect.publisher) displayMeta.push(['Publisher', aspect.publisher]);
+      if (aspect.author) displayMeta.push(['Author', aspect.author]);
+      if (aspect.license) displayMeta.push(['License', aspect.license]);
+      displayMeta.push(['Source', installMeta.source]);
 
-      if (meta.length > 0) {
-        for (const [label, value] of meta) {
+      if (displayMeta.length > 0) {
+        for (const [label, value] of displayMeta) {
           console.log(`  ${c.label(label.padEnd(10))} ${c.value(value)}`);
         }
       }

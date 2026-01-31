@@ -252,15 +252,28 @@ else
 fi
 
 # ============================================
-# 8. INFO
+# 8. INFO (on installed aspect)
 # ============================================
 section "Info"
 
-# Info might fail if aspect not found locally, check --help instead
 if $ASPECTS info --help > /dev/null 2>&1; then
   pass "info --help works"
 else
   fail "info" "Command failed"
+fi
+
+# Test info on the installed test-aspect (searches both project and global scopes)
+if $ASPECTS info test-aspect 2>&1 | grep -qi "test aspect"; then
+  pass "info finds installed aspect by name"
+else
+  fail "info by name" "Could not find installed aspect"
+fi
+
+# Verify scope is shown in output
+if $ASPECTS info test-aspect 2>&1 | grep -qE "\[(project|global)\]"; then
+  pass "info shows scope indicator"
+else
+  fail "info scope" "Missing scope indicator in output"
 fi
 
 # ============================================
@@ -303,11 +316,32 @@ fi
 # ============================================
 section "Share"
 
+# Share from path
 if $ASPECTS share ./test-aspect --dry-run > /dev/null 2>&1; then
-  pass "share --dry-run works"
+  pass "share --dry-run from path works"
 else
-  fail "share dry-run" "Command failed"
+  fail "share dry-run path" "Command failed"
 fi
+
+# Re-install test-aspect for share-by-name test (it was removed earlier)
+$ASPECTS add ./test-aspect > /dev/null 2>&1
+
+# Share installed aspect by name (tests cross-scope lookup)
+if $ASPECTS share test-aspect --dry-run 2>&1 | grep -qi "Found:"; then
+  pass "share finds installed aspect by name"
+else
+  fail "share by name" "Could not find installed aspect"
+fi
+
+# Verify hash is computed and shown
+if $ASPECTS share test-aspect --dry-run 2>&1 | grep -qE "Hash.*[A-Za-z0-9]{20,}"; then
+  pass "share computes and shows hash"
+else
+  fail "share hash" "Missing hash in output"
+fi
+
+# Cleanup: remove test-aspect again
+$ASPECTS remove test-aspect --force > /dev/null 2>&1 || true
 
 # ============================================
 # 12. LOGIN STATUS (not actually logging in)

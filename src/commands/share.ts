@@ -4,7 +4,7 @@ import { defineCommand } from 'citty';
 import * as p from '@clack/prompts';
 import { blake3HashAspect, canonicalizeAspect } from '../utils/hash';
 import { listInstalledAspects } from '../lib/config';
-import { loadInstalledAspect } from '../lib/aspect-loader';
+import { findAndLoadAspect } from '../lib/aspect-loader';
 import { parseAspectFile } from '../lib/parser';
 import { publishAnonymous, ApiClientError } from '../lib/api-client';
 import { c, icons } from '../utils/colors';
@@ -104,14 +104,17 @@ Want to claim a name instead? Use 'aspects publish' (requires login).`,
       }
       aspect = result.aspect;
     } else {
-      // Installed aspect name - loadInstalledAspect handles both JSON and YAML
-      const loaded = await loadInstalledAspect(target);
-      if (!loaded) {
+      // Installed aspect name - search both project and global scopes
+      const found = await findAndLoadAspect(target);
+      
+      if (!found) {
         p.log.error(`Aspect "${target}" is not installed or cannot be read`);
         p.log.info('To share from a path, use: aspects share ./path/to/aspect.json');
         process.exit(1);
       }
-      aspect = loaded;
+      
+      p.log.info(`Found: ${c.aspect(target)} ${c.dim(`[${found.scope}]`)}`);
+      aspect = found.aspect;
     }
 
     // Serialize for hashing and size check (canonicalized JSON matches server)
