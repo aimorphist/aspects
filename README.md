@@ -337,11 +337,19 @@ See the [API documentation](https://aspects.sh/docs) for full details.
 The Aspects CLI helps you create and manage aspects.
 
 ```bash
-# Install globally
-npm install -g @morphist/aspects
-
-# Or use directly with npx
+# Use directly with npx (no install required)
 npx @morphist/aspects <command>
+
+# Or install globally for shorter commands
+npm install -g @morphist/aspects
+```
+
+After global installation, run commands directly without npx:
+
+```bash
+aspects add alaric
+aspects search wizard
+aspects list
 ```
 
 ### Commands

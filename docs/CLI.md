@@ -5,14 +5,22 @@
 ## Installation
 
 ```bash
-# Install globally
-npm install -g aspects
+# Use directly with npx (no install required)
+npx @morphist/aspects <command>
 
-# Or use directly with npx
-npx aspects <command>
+# Or install globally for shorter commands
+npm install -g @morphist/aspects
 
 # Or with bun
-bun add -g aspects
+bun add -g @morphist/aspects
+```
+
+After global installation, run commands directly without npx:
+
+```bash
+aspects add alaric
+aspects search wizard
+aspects list
 ```
 
 ## Quick Start
