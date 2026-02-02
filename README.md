@@ -7,9 +7,9 @@
   ╚═╝  ╚═╝╚══════╝╚═╝     ╚══════╝ ╚═════╝   ╚═╝   ╚══════╝
 ```
 
-> **Community Aspects Registry** - Personality modules for AI agents.
+> **The Open Aspect Registry** - Personality modules for AI agents.
 
-[![Validate PRs](https://github.com/aimorphist/aspects/actions/workflows/validate-pr.yml/badge.svg)](https://github.com/aimorphist/aspects/actions/workflows/validate-pr.yml)
+**Website:** [aspects.sh](https://aspects.sh) | **Docs:** [aspects.sh/docs](https://aspects.sh/docs)
 
 ---
 
@@ -265,95 +265,44 @@ By placing critical rules in both positions, aspects work reliably across all mo
 
 See [Multi-LLM Prompting Guide](./docs/MULTI-LLM-PROMPTING.md) for detailed cross-model guidance.
 
-## Create & Submit an Aspect
+## Create & Publish an Aspect
 
-### Fork & Pull Request
+### Quick Start
 
-The standard way to contribute:
+```bash
+# 1. Create your aspect interactively
+npx @morphist/aspects create my-aspect
 
-1. **Fork this repository** on GitHub
+# 2. Edit the generated aspect.json (customize prompt, add directives)
 
-2. **Clone your fork**
+# 3. Share anonymously (no account needed)
+npx @morphist/aspects share ./my-aspect
+# Output: ✓ Shared! Hash: BnCcPam...
+# Anyone can install with: aspects add blake3:BnCcPam...
+```
 
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/aspects
-   cd aspects
-   ```
+### Publishing with an Account
 
-3. **Create your aspect** (use the CLI or manually)
+To claim a name and publish versioned updates:
 
-   ```bash
-   # With CLI (recommended)
-   npx @morphist/aspects create
+```bash
+# Authenticate with the registry
+npx @morphist/aspects login
 
-   # Or manually create the files:
-   mkdir -p registry/aspects/my-aspect
-   ```
+# Publish your aspect
+npx @morphist/aspects publish
+```
 
-4. **If creating manually**, add `registry/aspects/my-aspect/aspect.json`:
+We fully embrace anonymous contributions via `share` - but creating an account lets you claim names and publish updates.
 
-   ```json
-   {
-     "schemaVersion": 1,
-     "name": "my-aspect",
-     "publisher": "your-username",
-     "version": "1.0.0",
-     "displayName": "My Awesome Aspect",
-     "tagline": "A brief description",
-     "category": "assistant",
-     "tags": ["helpful", "friendly"],
-     "prompt": "Your personality prompt here..."
-   }
-   ```
+### Validation
 
-5. **If creating manually**, update `registry/index.json`:
-
-   ```json
-   {
-     "my-aspect": {
-       "latest": "1.0.0",
-       "versions": {
-         "1.0.0": {
-           "published": "2026-01-20T00:00:00Z",
-           "url": "https://raw.githubusercontent.com/aimorphist/aspects/main/registry/aspects/my-aspect/aspect.json"
-         }
-       },
-       "metadata": {
-         "displayName": "My Awesome Aspect",
-         "tagline": "A brief description",
-         "category": "assistant",
-         "publisher": "your-username",
-         "trust": "community"
-       }
-     }
-   }
-   ```
-
-6. **Commit and push**
-
-   ```bash
-   git add .
-   git commit -m "Add my-aspect"
-   git push origin main
-   ```
-
-7. **Open a Pull Request** at [github.com/aimorphist/aspects/compare](https://github.com/aimorphist/aspects/compare)
-
-### Automated Validation
-
-All submissions are automatically validated:
+All aspects are automatically validated:
 
 - ✅ JSON schema validation
 - ✅ Field length limits
 - ✅ Category verification
 - ✅ Security scan for prompt injection
-- ✅ Registry entry consistency
-
-### Submit via Issue Form
-
-Don't want to use git? Submit directly via our issue template:
-
-**[Submit an Aspect →](https://github.com/aimorphist/aspects/issues/new?template=new-aspect.yml)**
 
 ## Trust Levels
 
@@ -364,36 +313,43 @@ Don't want to use git? Submit directly via our issue template:
 
 ## For App Developers
 
-Fetch aspects from the registry:
+Fetch aspects from the registry API:
 
 ```typescript
-const REGISTRY_URL =
-  "https://raw.githubusercontent.com/aimorphist/aspects/main/registry/index.json";
+const API_URL = "https://aspects.sh/api/v1";
 
-// Fetch registry index
-const registry = await fetch(REGISTRY_URL).then((r) => r.json());
-
-// Get aspect details
-const alaricEntry = registry.aspects["alaric"];
-const aspectUrl = alaricEntry.versions[alaricEntry.latest].url;
-
-// Fetch full aspect
-const aspect = await fetch(aspectUrl).then((r) => r.json());
+// Fetch a specific aspect
+const response = await fetch(`${API_URL}/aspects/alaric/1.0.0`);
+const { aspect } = await response.json();
 
 console.log(aspect.prompt); // The personality prompt
 console.log(aspect.voiceHints); // Voice configuration
+
+// Search aspects
+const search = await fetch(`${API_URL}/search?q=wizard`).then(r => r.json());
+console.log(search.results);
 ```
+
+See the [API documentation](https://aspects.sh/docs) for full details.
 
 ## CLI
 
 The Aspects CLI helps you create and manage aspects.
 
 ```bash
-# Install globally
-npm install -g @morphist/aspects
-
-# Or use directly with npx
+# Use directly with npx (no install required)
 npx @morphist/aspects <command>
+
+# Or install globally for shorter commands
+npm install -g @morphist/aspects
+```
+
+After global installation, run commands directly without npx:
+
+```bash
+aspects add alaric
+aspects search wizard
+aspects list
 ```
 
 ### Commands
@@ -439,33 +395,14 @@ bun run scan
 
 ## Links
 
-- **Website:** [aspects.sh](https://aspects.sh) _(coming soon)_
-- **Registry:** [github.com/aimorphist/aspects](https://github.com/aimorphist/aspects)
+- **Website:** [aspects.sh](https://aspects.sh)
+- **Documentation:** [aspects.sh/docs](https://aspects.sh/docs)
+- **Source Code:** [github.com/aimorphist/aspects](https://github.com/aimorphist/aspects)
 - **Morphist App:** [morphist.ai](https://morphist.ai)
 
 ## License
 
 MIT © [Aspects](https://aspects.sh)
-
----
-
-## Installing from GitHub
-
-As an alternative to the registry, you can install aspects directly from any GitHub repository:
-
-```bash
-# Install from any GitHub repo containing aspect.json
-npx @morphist/aspects add github:owner/repo
-
-# From a specific branch or tag
-npx @morphist/aspects add github:owner/repo@v1.0.0
-```
-
-This is independent of the registry - great for:
-- Personal aspect collections
-- Organizational/private aspects
-- Forking and customizing existing aspects
-- Git-based version control workflows
 
 ---
 
