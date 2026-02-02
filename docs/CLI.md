@@ -557,15 +557,14 @@ You are Alaric, a quirky old wizard sitting by the fire in a cozy tavern.
 
 ### `aspects publish`
 
-Publish an aspect to the registry or GitHub.
+Publish an aspect to the registry. Requires authentication.
 
 ```bash
-aspects publish                           # Interactive
-aspects publish --github myuser/my-aspect # To your GitHub
-aspects publish --registry                # PR to official registry
+aspects publish              # Publish to registry
+aspects publish --dry-run    # Validate without publishing
 ```
 
-**Interactive flow:**
+**Flow:**
 
 ```
 📤 Publish aspect
@@ -574,17 +573,16 @@ aspects publish --registry                # PR to official registry
   Author:   Jane Doe
   License:  MIT
 
-? Publish to ›
-  ❯ GitHub (your repository)
-    Morphist Registry (creates PR)
+Validating...
+  ✓ Schema valid
+  ✓ Required fields present
+  ✓ Security scan passed
 
-? GitHub repository › jane/my-aspect
-? Create release tag? › yes (v1.0.0)
-
-✓ Published to github:jane/my-aspect@v1.0.0
+✓ Published to registry!
+  https://aspects.sh/aspects/my-aspect
 
 Others can now install with:
-  aspects install github:jane/my-aspect
+  aspects add my-aspect
 ```
 
 ---
@@ -898,7 +896,7 @@ Aspects are stored in `~/.aspects/`:
     }
   },
   "settings": {
-    "registryUrl": "https://raw.githubusercontent.com/aimorphist/aspects/main/registry/index.json"
+    "registryUrl": "https://aspects.sh/api/v1"
   }
 }
 ```
@@ -989,10 +987,10 @@ See the [API documentation](./API.md) for full details.
 
 ## Registry
 
-The official aspect registry is hosted at:
+The official aspect registry API is hosted at:
 
-- **Index:** `https://raw.githubusercontent.com/aimorphist/aspects/main/registry/index.json`
-- **Aspects:** `https://raw.githubusercontent.com/aimorphist/aspects/main/registry/aspects/<name>/aspect.yaml`
+- **API Base:** `https://aspects.sh/api/v1`
+- **Documentation:** [aspects.sh/docs](https://aspects.sh/docs)
 
 ### Trust Levels
 
@@ -1004,12 +1002,19 @@ The official aspect registry is hosted at:
 
 ### Publishing to Registry
 
-1. Fork `aimorphist/aspects`
-2. Add your aspect to `registry/aspects/<name>/aspect.yaml`
-3. Update `registry/index.json`
-4. Create a PR
+Use the CLI to publish directly:
 
-Or use `aspects publish --registry` to automate this.
+```bash
+# Anonymous sharing (no account needed)
+aspects share ./my-aspect
+# Output: ✓ Shared! Install with: aspects add blake3:BnCcPam...
+
+# Named publishing (requires account)
+aspects login
+aspects publish
+```
+
+See [aspects.sh/docs/cli](https://aspects.sh/docs/cli) for full publishing documentation.
 
 ---
 
