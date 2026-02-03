@@ -23,7 +23,7 @@ const CONFIG_KEYS = {
 
 type ConfigKey = keyof typeof CONFIG_KEYS;
 
-function getNestedValue(obj: Record<string, unknown>, path: string[]): unknown {
+function getNestedValue(obj: Record<string, unknown>, path: readonly string[]): unknown {
   let current: unknown = obj;
   for (const key of path) {
     if (current && typeof current === 'object' && key in current) {
@@ -35,7 +35,7 @@ function getNestedValue(obj: Record<string, unknown>, path: string[]): unknown {
   return current;
 }
 
-function setNestedValue(obj: Record<string, unknown>, path: string[], value: unknown): void {
+function setNestedValue(obj: Record<string, unknown>, path: readonly string[], value: unknown): void {
   let current = obj;
   for (let i = 0; i < path.length - 1; i++) {
     const key = path[i]!;

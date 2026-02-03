@@ -245,7 +245,7 @@ aspects find "trust:verified" --registry
 | Field       | Description                    | Example                    |
 | ----------- | ------------------------------ | -------------------------- |
 | `name`      | Aspect name (slug)             | `name:alaric`              |
-| `category`  | Official category              | `category:roleplay`        |
+| `category`  | Category (official or custom)  | `category:roleplay`        |
 | `tag`       | Any tag                        | `tag:meditation`           |
 | `publisher` | Publisher name                 | `publisher:morphist`       |
 | `trust`     | Trust level                    | `trust:verified`           |

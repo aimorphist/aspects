@@ -218,7 +218,7 @@ export async function searchAspects(params: {
 export async function publishAspect(aspect: Aspect): Promise<ApiPublishResponse> {
   return apiFetch<ApiPublishResponse>('/aspects', {
     method: 'POST',
-    body: { aspect },
+    body: aspect,
     auth: true,
   });
 }

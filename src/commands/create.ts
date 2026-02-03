@@ -441,7 +441,7 @@ Keep it light! A few well-crafted rules beat many vague ones.
     const aspect: Record<string, unknown> = {
       schemaVersion: 1,
       name: aspectName,
-      publisher: answers.author || "community",
+      publisher: "anon-user",
       version: "1.0.0",
       displayName: answers.displayName,
       tagline: answers.tagline,

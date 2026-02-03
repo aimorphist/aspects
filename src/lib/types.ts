@@ -25,22 +25,6 @@ export interface Aspect {
     autoNarration?: boolean;
   }>;
 
-  resources?: {
-    voice?: {
-      recommended?: {
-        provider: string;
-        voiceId: string;
-      };
-    };
-    model?: {
-      recommended?: {
-        provider: string;
-        modelId: string;
-      };
-    };
-    skills?: string[];
-  };
-
   prompt: string;
 }
 
@@ -228,7 +212,7 @@ export interface ApiPublishResponse {
 }
 
 export interface ApiAnonymousPublishResponse {
-  ok: true;
+  name: string;
   blake3: string;
   size: number;
   url: string;

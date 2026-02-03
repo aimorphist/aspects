@@ -47,6 +47,21 @@ export function parseInstallSpec(spec: string): InstallSpec {
     return { type: 'local', path: absolutePath };
   }
 
+  // aspects.sh URLs - extract name or hash
+  if (spec.includes('aspects.sh/')) {
+    // Full aspect URL: https://aspects.sh/aspects/alaric-4jjjSJKLmN
+    const aspectsMatch = spec.match(/aspects\.sh\/aspects\/([a-z0-9-]+)/i);
+    if (aspectsMatch?.[1]) {
+      return { type: 'registry', name: aspectsMatch[1] };
+    }
+    // Hash URL: https://aspects.sh/a/BnCcPam...
+    const hashMatch = spec.match(/aspects\.sh\/a\/([A-Za-z0-9]{16,44})/);
+    if (hashMatch?.[1]) {
+      return { type: 'hash', hash: hashMatch[1] };
+    }
+    throw new Error(`Invalid aspects.sh URL: ${spec}`);
+  }
+
   // Registry: qualified (publisher/name) or unqualified (name)
   // Format: [publisher/]name[@version]
   let name: string;

@@ -167,14 +167,17 @@ Want to claim a name instead? Use 'aspects publish' (requires login).`,
       console.log();
       console.log(`${icons.success} ${c.bold('Shared successfully!')}`);
       console.log();
-      console.log(`  ${c.label('Hash')}    ${response.blake3}`);
-      console.log(`  ${c.label('Install')} ${c.highlight(`aspects add blake3:${response.blake3}`)}`);
+      console.log(`  ${c.label('Name')}    ${c.highlight(response.name)}`);
+      console.log(`  ${c.label('Install')} ${c.highlight(`aspects add ${response.name}`)}`);
+      console.log(`  ${c.label('URL')}     ${response.url}`);
+      console.log();
+      console.log(`  ${c.muted('Or by hash:')} aspects add blake3:${response.blake3}`);
       if (response.existing) {
         console.log(`  ${c.muted('(Already existed on registry)')}`);
       }
       console.log();
 
-      p.outro('Share this hash with anyone to let them install your aspect!');
+      p.outro('Share this name or URL with anyone to let them install your aspect!');
     } catch (err) {
       spinner.stop('Upload failed');
 

@@ -1,7 +1,8 @@
 import { z } from "zod";
 
 /**
- * Official categories - all aspects must use exactly one
+ * Official categories - suggestions for UI, not validation constraints.
+ * Custom categories are allowed (2-20 chars, alphanumeric + hyphens, any case).
  */
 export const OFFICIAL_CATEGORIES = [
   "assistant",
@@ -18,14 +19,21 @@ export const OFFICIAL_CATEGORIES = [
 export type OfficialCategory = (typeof OFFICIAL_CATEGORIES)[number];
 
 /**
- * Field length limits to prevent abuse
+ * Field length limits (min/max) for validation
  */
 export const FIELD_LIMITS = {
+  nameMin: 2,
   name: 50,
+  displayNameMin: 2,
   displayName: 100,
+  taglineMin: 10,
   tagline: 200,
+  categoryMin: 2,
+  category: 20,
+  tagMin: 2,
   tag: 30,
   maxTags: 10,
+  promptMin: 10,
   prompt: 50000,
   author: 100,
   publisher: 50,
@@ -50,29 +58,30 @@ export const FIELD_LIMITS = {
  * Includes field length limits and category/tags validation.
  */
 export const aspectSchema = z.object({
-  schemaVersion: z.number().default(1),
+  schemaVersion: z.literal(1),
   name: z
     .string()
-    .min(1, "name is required")
+    .min(FIELD_LIMITS.nameMin, `name must be at least ${FIELD_LIMITS.nameMin} chars`)
     .max(FIELD_LIMITS.name, `name must be ${FIELD_LIMITS.name} chars or less`),
   publisher: z
     .string()
+    .min(1, 'publisher is required')
     .max(
       FIELD_LIMITS.publisher,
       `publisher must be ${FIELD_LIMITS.publisher} chars or less`,
     )
-    .optional(),
+    .default('anon-user'),
   version: z.string().default("0.0.0"),
   displayName: z
     .string()
-    .min(1, "displayName is required")
+    .min(FIELD_LIMITS.displayNameMin, `displayName must be at least ${FIELD_LIMITS.displayNameMin} chars`)
     .max(
       FIELD_LIMITS.displayName,
       `displayName must be ${FIELD_LIMITS.displayName} chars or less`,
     ),
   tagline: z
     .string()
-    .min(1, "tagline is required")
+    .min(FIELD_LIMITS.taglineMin, `tagline must be at least ${FIELD_LIMITS.taglineMin} chars`)
     .max(
       FIELD_LIMITS.tagline,
       `tagline must be ${FIELD_LIMITS.tagline} chars or less`,
@@ -96,16 +105,19 @@ export const aspectSchema = z.object({
     )
     .optional(),
 
-  // Category: required, must be from official list
-  category: z.enum(OFFICIAL_CATEGORIES, {
-    message: `category must be one of: ${OFFICIAL_CATEGORIES.join(", ")}`,
-  }),
+  // Category: required, can be official or custom (2-20 chars, alphanumeric + hyphens)
+  category: z
+    .string()
+    .min(FIELD_LIMITS.categoryMin, `Category must be at least ${FIELD_LIMITS.categoryMin} characters`)
+    .max(FIELD_LIMITS.category, `Category must be at most ${FIELD_LIMITS.category} characters`)
+    .regex(/^[a-zA-Z0-9-]+$/, "Category must be alphanumeric with hyphens only"),
 
   // Tags: optional, open-ended for discovery/search
   tags: z
     .array(
       z
         .string()
+        .min(FIELD_LIMITS.tagMin, `each tag must be at least ${FIELD_LIMITS.tagMin} chars`)
         .max(
           FIELD_LIMITS.tag,
           `each tag must be ${FIELD_LIMITS.tag} chars or less`,
@@ -166,32 +178,6 @@ export const aspectSchema = z.object({
     })
     .optional(),
 
-  resources: z
-    .object({
-      voice: z
-        .object({
-          recommended: z
-            .object({
-              provider: z.string(),
-              voiceId: z.string(),
-            })
-            .optional(),
-        })
-        .optional(),
-      model: z
-        .object({
-          recommended: z
-            .object({
-              provider: z.string(),
-              modelId: z.string(),
-            })
-            .optional(),
-        })
-        .optional(),
-      skills: z.array(z.string()).optional(),
-    })
-    .optional(),
-
   directives: z
     .array(
       z.object({
@@ -241,7 +227,7 @@ export const aspectSchema = z.object({
 
   prompt: z
     .string()
-    .min(1, "prompt is required")
+    .min(FIELD_LIMITS.promptMin, `prompt must be at least ${FIELD_LIMITS.promptMin} chars`)
     .max(
       FIELD_LIMITS.prompt,
       `prompt must be ${FIELD_LIMITS.prompt} chars or less`,

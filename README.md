@@ -58,6 +58,30 @@ npx @morphist/aspects add alaric
 npx @morphist/aspects add -g alaric
 ```
 
+### Install Formats
+
+Multiple ways to specify an aspect:
+
+```bash
+# By name (registry)
+aspects add alaric
+
+# Anonymous aspect (name with hash suffix)
+aspects add my-wizard-7kYx3abc12
+
+# By URL
+aspects add https://aspects.sh/aspects/my-wizard-7kYx3abc12
+
+# By hash
+aspects add blake3:BnCcPam...
+
+# From GitHub
+aspects add github:user/repo
+
+# From local path
+aspects add ./path/to/aspect
+```
+
 ### Create & Share (No Account Needed)
 
 The simplest way to publish an aspect:
@@ -70,10 +94,10 @@ npx @morphist/aspects create my-aspect
 
 # 3. Share to the public registry
 npx @morphist/aspects share ./my-aspect
-# Output: ✓ Shared! Hash: 7kYx3...abc
+# Output: ✓ Shared! Name: my-aspect-7kYx3abc12
 
 # 4. Anyone can now install it:
-npx @morphist/aspects add blake3:7kYx3...abc
+npx @morphist/aspects add my-aspect-7kYx3abc12
 ```
 
 ### Publishing to Registry
@@ -88,7 +112,8 @@ Two ways to publish aspects to the public registry:
 ```bash
 # Anonymous sharing (no account)
 npx @morphist/aspects share ./my-aspect
-# Output: ✓ Shared! Install with: aspects add blake3:7kYx3...
+# Output: ✓ Shared! Name: my-aspect-7kYx3abc12
+#         Install with: npx @morphist/aspects add my-aspect-7kYx3abc12
 
 # Publishing with account
 npx @morphist/aspects login      # Create account or authenticate
@@ -162,7 +187,9 @@ Aspects are defined in `aspect.json`:
 
 ### Categories
 
-Every aspect must have exactly one official category:
+Every aspect has exactly one category. You can use an official category or create your own custom category.
+
+**Official Categories:**
 
 | Category       | Description                        |
 | -------------- | ---------------------------------- |
@@ -174,6 +201,10 @@ Every aspect must have exactly one official category:
 | `gaming`       | Games, campaigns, entertainment    |
 | `spiritual`    | Mindfulness, wisdom, guidance      |
 | `pundit`       | Commentary, analysis, opinions     |
+
+**Custom Categories:**
+
+You can use any category name (2-20 characters, alphanumeric + hyphens, any case). Examples: `YOLO`, `my-niche`, `Cooking`.
 
 ### Optional Fields
 
@@ -189,16 +220,18 @@ Every aspect must have exactly one official category:
 
 ### Field Limits
 
-To prevent abuse, fields have maximum lengths:
+Fields have minimum and maximum lengths:
 
-| Field         | Limit                   |
-| ------------- | ----------------------- |
-| `name`        | 50 characters           |
-| `displayName` | 100 characters          |
-| `tagline`     | 200 characters          |
-| `tags`        | 10 items, 30 chars each |
-| `prompt`      | 50,000 characters       |
-| `modes`       | 10 maximum              |
+| Field         | Min | Max                     |
+| ------------- | --- | ----------------------- |
+| `name`        | 2   | 50 characters           |
+| `displayName` | 2   | 100 characters          |
+| `tagline`     | 10  | 200 characters          |
+| `category`    | 2   | 20 characters           |
+| `prompt`      | 10  | 50,000 characters       |
+| `tags`        | 2   | 30 chars each, max 10   |
+| `icon`        | -   | 50 characters           |
+| `modes`       | -   | 10 maximum              |
 
 ## Instructions & Directives
 
@@ -277,8 +310,8 @@ npx @morphist/aspects create my-aspect
 
 # 3. Share anonymously (no account needed)
 npx @morphist/aspects share ./my-aspect
-# Output: ✓ Shared! Hash: BnCcPam...
-# Anyone can install with: aspects add blake3:BnCcPam...
+# Output: ✓ Shared! Name: my-aspect-BnCcPam123
+# Anyone can install with: npx @morphist/aspects add my-aspect-BnCcPam123
 ```
 
 ### Publishing with an Account

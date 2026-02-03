@@ -124,7 +124,7 @@ Security scan flags patterns like:
         { label: "Schema version valid", passed: aspect.schemaVersion === 1 },
         {
           label: "Category valid",
-          passed: OFFICIAL_CATEGORIES.includes(aspect.category),
+          passed: (OFFICIAL_CATEGORIES as readonly string[]).includes(aspect.category),
         },
         { label: "Prompt not empty", passed: aspect.prompt.length > 0 },
       ];
