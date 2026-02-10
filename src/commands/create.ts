@@ -5,7 +5,6 @@ import { defineCommand } from "citty";
 import * as p from "@clack/prompts";
 import {
   OFFICIAL_CATEGORIES,
-  FIELD_LIMITS,
   type OfficialCategory,
 } from "../lib/schema";
 import { listAllSets, loadSet, saveSet } from "./set";
@@ -14,26 +13,10 @@ const REGISTRY_DIR = "registry/aspects";
 const INDEX_PATH = "registry/index.json";
 const GITHUB_REPO = "aimorphist/aspects";
 
-// Types for directives and instructions
-interface Directive {
-  id: string;
-  rule: string;
-  priority: "high" | "medium" | "low";
-}
-
-interface Instruction {
-  id: string;
-  rule: string;
-}
-
-// Generate a slug ID from rule text
-function generateIdFromRule(rule: string): string {
-  return rule
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, "")
-    .trim()
-    .replace(/\s+/g, "-")
-    .slice(0, 40);
+// Types for prompt sections
+interface ModeEntry {
+  name: string;
+  description: string;
 }
 
 // Category labels for display
@@ -294,41 +277,49 @@ If run inside the aspects registry repo, automatically offers to:
           .filter(Boolean)
       : undefined;
 
-    // Directives & Instructions step
+    // Behavioral rules & modes step
     p.log.message(`
-📋 Directives & Instructions
+📋 Behavioral Rules & Modes
 
-Directives are MUST-follow rules - they get special emphasis
-across all LLM models (bold, XML tags, repetition).
+Directives are strict rules baked into the prompt.
   Example: "Never break character under any circumstances"
 
-Instructions are general guidance - softer preferences for
-how the AI should behave.
+Instructions are softer guidance for behavior.
   Example: "Prefer shorter responses when possible"
 
-Keep it light! A few well-crafted rules beat many vague ones.
+Modes are distinct behavioral states the user can switch between.
+  Example: "campaign" - Run a freeform RPG campaign
+
+All of these get compiled directly into the prompt text.
 `);
 
-    const directives: Directive[] = [];
-    const instructions: Instruction[] = [];
+    const directives: string[] = [];
+    const instructions: string[] = [];
+    const modes: ModeEntry[] = [];
     let addingRules = true;
 
     while (addingRules) {
-      const totalCount = directives.length + instructions.length;
+      const totalCount = directives.length + instructions.length + modes.length;
       const hasAny = totalCount > 0;
 
-      // Show current count if any exist
       if (hasAny) {
-        p.log.info(
-          `Current: ${directives.length} directive${directives.length !== 1 ? "s" : ""}, ${instructions.length} instruction${instructions.length !== 1 ? "s" : ""}`,
-        );
+        const parts = [];
+        if (directives.length > 0)
+          parts.push(
+            `${directives.length} directive${directives.length !== 1 ? "s" : ""}`,
+          );
+        if (instructions.length > 0)
+          parts.push(
+            `${instructions.length} instruction${instructions.length !== 1 ? "s" : ""}`,
+          );
+        if (modes.length > 0)
+          parts.push(
+            `${modes.length} mode${modes.length !== 1 ? "s" : ""}`,
+          );
+        p.log.info(`Current: ${parts.join(", ")}`);
       }
 
-      // Check if approaching limit
-      if (
-        totalCount >=
-        FIELD_LIMITS.maxDirectives + FIELD_LIMITS.maxInstructions - 5
-      ) {
+      if (totalCount >= 40) {
         p.log.warn("You've added quite a few! Consider consolidating.");
       }
 
@@ -338,12 +329,17 @@ Keep it light! A few well-crafted rules beat many vague ones.
           {
             value: "directive",
             label: "Add a directive (strict rule)",
-            hint: "MUST-follow, emphasized across models",
+            hint: "MUST-follow rule",
           },
           {
             value: "instruction",
             label: "Add an instruction (general guidance)",
             hint: "Softer preference",
+          },
+          {
+            value: "mode",
+            label: "Add a mode (behavioral state)",
+            hint: "Switchable behavior",
           },
           {
             value: "done",
@@ -360,10 +356,8 @@ Keep it light! A few well-crafted rules beat many vague ones.
       }
 
       if (action === "directive") {
-        if (directives.length >= FIELD_LIMITS.maxDirectives) {
-          p.log.warn(
-            `Maximum ${FIELD_LIMITS.maxDirectives} directives reached.`,
-          );
+        if (directives.length >= 25) {
+          p.log.warn("Maximum 25 directives reached.");
           continue;
         }
 
@@ -372,46 +366,17 @@ Keep it light! A few well-crafted rules beat many vague ones.
           placeholder: "Never break character under any circumstances",
           validate: (value) => {
             if (!value) return "Rule text is required";
-            if (value.length > FIELD_LIMITS.directiveRule) {
-              return `Rule must be ${FIELD_LIMITS.directiveRule} characters or less`;
-            }
+            if (value.length > 500) return "Rule must be 500 characters or less";
           },
         });
 
         if (p.isCancel(ruleText)) continue;
 
-        const priority = await p.select({
-          message: "Priority level:",
-          options: [
-            {
-              value: "high",
-              label: "High",
-              hint: "Critical, always emphasized",
-            },
-            {
-              value: "medium",
-              label: "Medium",
-              hint: "Important but flexible",
-            },
-            { value: "low", label: "Low", hint: "Nice-to-have preference" },
-          ],
-          initialValue: "high",
-        });
-
-        if (p.isCancel(priority)) continue;
-
-        directives.push({
-          id: generateIdFromRule(ruleText as string),
-          rule: ruleText as string,
-          priority: priority as "high" | "medium" | "low",
-        });
-
+        directives.push(ruleText as string);
         p.log.success(`Added directive #${directives.length}`);
       } else if (action === "instruction") {
-        if (instructions.length >= FIELD_LIMITS.maxInstructions) {
-          p.log.warn(
-            `Maximum ${FIELD_LIMITS.maxInstructions} instructions reached.`,
-          );
+        if (instructions.length >= 25) {
+          p.log.warn("Maximum 25 instructions reached.");
           continue;
         }
 
@@ -420,20 +385,48 @@ Keep it light! A few well-crafted rules beat many vague ones.
           placeholder: "Prefer shorter responses when possible",
           validate: (value) => {
             if (!value) return "Instruction text is required";
-            if (value.length > FIELD_LIMITS.instructionRule) {
-              return `Instruction must be ${FIELD_LIMITS.instructionRule} characters or less`;
-            }
+            if (value.length > 500)
+              return "Instruction must be 500 characters or less";
           },
         });
 
         if (p.isCancel(ruleText)) continue;
 
-        instructions.push({
-          id: generateIdFromRule(ruleText as string),
-          rule: ruleText as string,
+        instructions.push(ruleText as string);
+        p.log.success(`Added instruction #${instructions.length}`);
+      } else if (action === "mode") {
+        if (modes.length >= 10) {
+          p.log.warn("Maximum 10 modes reached.");
+          continue;
+        }
+
+        const modeName = await p.text({
+          message: "Mode name (slug):",
+          placeholder: "campaign",
+          validate: (value) => {
+            if (!value) return "Mode name is required";
+            if (!/^[a-z0-9-]+$/.test(value))
+              return "Must be lowercase letters, numbers, and hyphens";
+            if (value.length > 30) return "Mode name must be 30 characters or less";
+          },
         });
 
-        p.log.success(`Added instruction #${instructions.length}`);
+        if (p.isCancel(modeName)) continue;
+
+        const modeDesc = await p.text({
+          message: "Mode description:",
+          placeholder: "Run a freeform RPG campaign",
+          validate: (value) => {
+            if (!value) return "Description is required";
+            if (value.length > 200)
+              return "Description must be 200 characters or less";
+          },
+        });
+
+        if (p.isCancel(modeDesc)) continue;
+
+        modes.push({ name: modeName as string, description: modeDesc as string });
+        p.log.success(`Added mode: ${modeName}`);
       }
     }
 
@@ -466,20 +459,12 @@ Keep it light! A few well-crafted rules beat many vague ones.
       styleHints: "Speak naturally and warmly.",
     };
 
-    // Add directives and instructions if any were created
-    if (directives.length > 0) {
-      aspect.directives = directives;
-    }
-
-    if (instructions.length > 0) {
-      aspect.instructions = instructions;
-    }
-
-    // Generate prompt based on style
+    // Generate prompt based on style, with directives/instructions/modes baked in
     aspect.prompt = generatePrompt(
       answers.promptStyle as string,
       answers.displayName as string,
       answers.tagline as string,
+      { directives, instructions, modes },
     );
 
     // Determine output path
@@ -643,10 +628,17 @@ function generatePrompt(
   style: string,
   displayName: string,
   tagline: string,
+  sections?: {
+    directives: string[];
+    instructions: string[];
+    modes: ModeEntry[];
+  },
 ): string {
+  let base: string;
+
   switch (style) {
     case "character":
-      return `## Aspect: ${displayName}
+      base = `## Aspect: ${displayName}
 **YOU ARE ${displayName.toUpperCase()}.** Speak as this character at all times.
 
 **Tagline**: "${tagline}"
@@ -663,11 +655,11 @@ You ARE ${displayName}. Embody this character fully from the first message.
 
 ### Rules
 - **Brief by default**: Keep responses short unless asked for more
-- **Stay in character**: Never break character unless explicitly asked
-`;
+- **Stay in character**: Never break character unless explicitly asked`;
+      break;
 
     case "assistant":
-      return `## Aspect: ${displayName}
+      base = `## Aspect: ${displayName}
 You are ${displayName}, ${tagline.toLowerCase()}.
 
 ### Guidelines
@@ -677,16 +669,42 @@ You are ${displayName}, ${tagline.toLowerCase()}.
 
 ### Personality
 - [Add personality traits here]
-- [Add areas of expertise]
-`;
+- [Add areas of expertise]`;
+      break;
 
     case "blank":
     default:
-      return `## Aspect: ${displayName}
+      base = `## Aspect: ${displayName}
 
 ${tagline}
 
-[Write your prompt here]
-`;
+[Write your prompt here]`;
+      break;
   }
+
+  // Append behavioral sections to prompt text
+  if (sections) {
+    if (sections.directives.length > 0) {
+      base += "\n\n### Directives";
+      for (const rule of sections.directives) {
+        base += `\n- ${rule}`;
+      }
+    }
+
+    if (sections.instructions.length > 0) {
+      base += "\n\n### Instructions";
+      for (const rule of sections.instructions) {
+        base += `\n- ${rule}`;
+      }
+    }
+
+    if (sections.modes.length > 0) {
+      base += "\n\n### Modes\nSay mode name to switch.";
+      for (const mode of sections.modes) {
+        base += `\n- **${mode.name}**: ${mode.description}`;
+      }
+    }
+  }
+
+  return base + "\n";
 }

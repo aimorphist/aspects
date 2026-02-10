@@ -50,15 +50,16 @@ export function parseAspectJson(content: string): ParseResult {
   const warnings: string[] = [];
   const rawObj = raw as Record<string, unknown>;
 
-  // Warn about missing recommended fields
+  // Default missing recommended fields
   if (!('schemaVersion' in rawObj)) {
     warnings.push('Missing schemaVersion, defaulting to 1');
+    rawObj.schemaVersion = 1;
   }
   if (!('version' in rawObj)) {
     warnings.push('Missing version, defaulting to "0.0.0"');
   }
 
-  const result = aspectSchema.safeParse(raw);
+  const result = aspectSchema.safeParse(rawObj);
 
   if (!result.success) {
     return {

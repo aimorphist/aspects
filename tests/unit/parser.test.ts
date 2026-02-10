@@ -69,7 +69,7 @@ describe('parseAspectJson', () => {
   test('accepts all valid categories', () => {
     const categories = [
       'assistant', 'roleplay', 'creative', 'productivity',
-      'education', 'gaming', 'spiritual', 'pundit', 'guide',
+      'education', 'gaming', 'spiritual', 'pundit',
     ];
     for (const category of categories) {
       const result = parseAspectJson(JSON.stringify({ ...VALID_ASPECT, category }));
