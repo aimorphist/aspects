@@ -1,6 +1,6 @@
 {
   "name": "@morphist/aspects",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Package manager for AI personality aspects - like npm for agent personas",
   "author": "Morphist <hello@morphist.ai>",
   "license": "MIT",
