@@ -20,11 +20,6 @@ export interface Aspect {
     styleHints?: string;
   };
 
-  modes?: Record<string, {
-    description: string;
-    autoNarration?: boolean;
-  }>;
-
   prompt: string;
 }
 

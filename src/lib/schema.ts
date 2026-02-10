@@ -13,7 +13,6 @@ export const OFFICIAL_CATEGORIES = [
   "gaming",
   "spiritual",
   "pundit",
-  "guide",
 ] as const;
 
 export type OfficialCategory = (typeof OFFICIAL_CATEGORIES)[number];
@@ -36,21 +35,12 @@ export const FIELD_LIMITS = {
   promptMin: 10,
   prompt: 50000,
   author: 100,
-  publisher: 50,
+  publisher: 100,
   icon: 50,
   license: 50,
   styleHints: 500,
-  emotion: 50,
+  emotion: 30,
   maxEmotions: 10,
-  maxModes: 10,
-  modeDescription: 500,
-  modeCritical: 1000,
-  directiveId: 50,
-  directiveRule: 500,
-  instructionId: 50,
-  instructionRule: 500,
-  maxDirectives: 25,
-  maxInstructions: 25,
 } as const;
 
 /**
@@ -151,78 +141,6 @@ export const aspectSchema = z.object({
         )
         .optional(),
     })
-    .optional(),
-
-  modes: z
-    .record(
-      z.string(),
-      z.object({
-        description: z
-          .string()
-          .max(
-            FIELD_LIMITS.modeDescription,
-            `mode description must be ${FIELD_LIMITS.modeDescription} chars or less`,
-          ),
-        critical: z
-          .string()
-          .max(
-            FIELD_LIMITS.modeCritical,
-            `mode critical must be ${FIELD_LIMITS.modeCritical} chars or less`,
-          )
-          .optional(),
-        autoNarration: z.boolean().optional(),
-      }),
-    )
-    .refine((modes) => Object.keys(modes).length <= FIELD_LIMITS.maxModes, {
-      message: `maximum ${FIELD_LIMITS.maxModes} modes allowed`,
-    })
-    .optional(),
-
-  directives: z
-    .array(
-      z.object({
-        id: z
-          .string()
-          .max(
-            FIELD_LIMITS.directiveId,
-            `directive id must be ${FIELD_LIMITS.directiveId} chars or less`,
-          ),
-        rule: z
-          .string()
-          .max(
-            FIELD_LIMITS.directiveRule,
-            `directive rule must be ${FIELD_LIMITS.directiveRule} chars or less`,
-          ),
-        priority: z.enum(["high", "medium", "low"]),
-      }),
-    )
-    .max(
-      FIELD_LIMITS.maxDirectives,
-      `maximum ${FIELD_LIMITS.maxDirectives} directives allowed`,
-    )
-    .optional(),
-
-  instructions: z
-    .array(
-      z.object({
-        id: z
-          .string()
-          .max(
-            FIELD_LIMITS.instructionId,
-            `instruction id must be ${FIELD_LIMITS.instructionId} chars or less`,
-          ),
-        rule: z
-          .string()
-          .max(
-            FIELD_LIMITS.instructionRule,
-            `instruction rule must be ${FIELD_LIMITS.instructionRule} chars or less`,
-          ),
-      }),
-    )
-    .max(
-      FIELD_LIMITS.maxInstructions,
-      `maximum ${FIELD_LIMITS.maxInstructions} instructions allowed`,
-    )
     .optional(),
 
   prompt: z
