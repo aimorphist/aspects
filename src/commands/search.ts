@@ -34,6 +34,10 @@ For advanced filtering, use 'aspects find' with boolean operators.`,
       type: 'string',
       description: 'Filter by trust level (verified, community)',
     },
+    kind: {
+      type: 'string',
+      description: 'Filter by kind (personality, schema)',
+    },
     limit: {
       type: 'string',
       description: 'Max results (default 20, max 100)',
@@ -47,11 +51,19 @@ For advanced filtering, use 'aspects find' with boolean operators.`,
     const query = args.query as string | undefined;
     const category = args.category as string | undefined;
     const trust = args.trust as string | undefined;
+    const kind = args.kind as string | undefined;
     const limit = args.limit ? parseInt(args.limit as string, 10) : undefined;
     const offset = args.offset ? parseInt(args.offset as string, 10) : undefined;
 
-    // Try API-based search first
-    try {
+    if (kind && kind !== 'personality' && kind !== 'schema') {
+      log.error(`Invalid --kind "${kind}". Must be "personality" or "schema".`);
+      process.exit(1);
+    }
+
+    // Try API-based search first (skipped when --kind filter is set, since
+    // the live API doesn't yet surface kind in search results — fall back to
+    // the registry index which carries kind metadata).
+    if (!kind) try {
       const result = await searchRegistry({ q: query, category, trust, limit, offset });
 
       if (result.results.length === 0) {
@@ -113,6 +125,11 @@ For advanced filtering, use 'aspects find' with boolean operators.`,
     // Apply trust filter
     if (trust) {
       matches = matches.filter(([, info]) => info.metadata.trust === trust);
+    }
+
+    // Apply kind filter (treat missing kind as "personality" for back-compat)
+    if (kind) {
+      matches = matches.filter(([, info]) => (info.metadata.kind ?? 'personality') === kind);
     }
 
     if (matches.length === 0) {

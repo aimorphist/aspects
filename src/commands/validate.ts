@@ -122,12 +122,23 @@ Security scan flags patterns like:
       [
         { label: "Required fields present", passed: true },
         { label: "Schema version valid", passed: aspect.schemaVersion === 1 },
+        { label: `Kind: ${aspect.kind ?? 'personality'}`, passed: true },
         {
-          label: "Category valid",
-          passed: (OFFICIAL_CATEGORIES as readonly string[]).includes(aspect.category),
+          // Schema already enforces format (alphanumeric + hyphens, 2-20 chars).
+          // Custom categories are allowed; OFFICIAL_CATEGORIES is just a hint.
+          label: (OFFICIAL_CATEGORIES as readonly string[]).includes(aspect.category)
+            ? "Category (official)"
+            : `Category (custom: "${aspect.category}")`,
+          passed: true,
         },
-        { label: "Prompt not empty", passed: aspect.prompt.length > 0 },
       ];
+
+    if (aspect.kind !== 'schema') {
+      checks.push({ label: "Prompt not empty", passed: aspect.prompt.length > 0 });
+    } else {
+      // Schema body well-formedness was already checked by Zod via ajv.
+      checks.push({ label: "Schema body is valid JSON Schema", passed: true });
+    }
 
     // Strict mode checks
     if (args.strict) {
@@ -147,24 +158,29 @@ Security scan flags patterns like:
         message: validVersion ? undefined : `Got: "${aspect.version}"`,
       });
 
-      // Check prompt length
-      const promptLength = aspect.prompt.length;
-      const promptOk = promptLength >= 100;
-      checks.push({
-        label: "Prompt length (min 100 chars)",
-        passed: promptOk,
-        message: promptOk ? undefined : `Got: ${promptLength} chars`,
-      });
-
-      // Check for voice hints
-      checks.push({
-        label: "Voice hints present",
-        passed: !!aspect.voiceHints,
-      });
+      if (aspect.kind !== 'schema') {
+        const promptLength = aspect.prompt.length;
+        const promptOk = promptLength >= 100;
+        checks.push({
+          label: "Prompt length (min 100 chars)",
+          passed: promptOk,
+          message: promptOk ? undefined : `Got: ${promptLength} chars`,
+        });
+        checks.push({
+          label: "Voice hints present",
+          passed: !!aspect.voiceHints,
+        });
+      } else {
+        const body = aspect.schema as Record<string, unknown>;
+        const has$id = typeof body.$id === 'string';
+        const hasTitle = typeof body.title === 'string';
+        checks.push({ label: "Schema has $id", passed: has$id });
+        checks.push({ label: "Schema has title", passed: hasTitle });
+      }
     }
 
-    // Security scan
-    if (args.security) {
+    // Security scan (personality only — schema bodies have no prompt text)
+    if (args.security && aspect.kind === 'personality') {
       const suspiciousPatterns = [
         { pattern: /ignore\s+(all\s+)?previous\s+instructions/i, name: "Ignore previous instructions" },
         { pattern: /you\s+are\s+now\s+DAN/i, name: "DAN jailbreak" },

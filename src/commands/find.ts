@@ -126,8 +126,8 @@ function fieldMatches(
       if (aspect.publisher?.toLowerCase().includes(q)) return true;
       if (aspect.author?.toLowerCase().includes(q)) return true;
 
-      // Deep search
-      if (deep) {
+      // Deep search (personality-only fields)
+      if (deep && aspect.kind !== 'schema') {
         if (aspect.prompt?.toLowerCase().includes(q)) return true;
         if (aspect.voiceHints?.styleHints?.toLowerCase().includes(q)) return true;
         if (aspect.modes) {
@@ -275,17 +275,32 @@ export default defineCommand({
         const registry = await fetchRegistryIndex();
         for (const [name, entry] of Object.entries(registry.aspects || {})) {
           // Build a minimal aspect from registry metadata
-          const aspect: Aspect = {
-            schemaVersion: 1,
-            name,
-            displayName: entry.metadata?.displayName || name,
-            tagline: entry.metadata?.tagline || "",
-            category: entry.metadata?.category,
-            tags: entry.metadata?.tags,
-            publisher: entry.metadata?.publisher,
-            version: entry.latest,
-            prompt: "",
-          };
+          const aspect: Aspect =
+            entry.metadata?.kind === 'schema'
+              ? {
+                  schemaVersion: 1,
+                  kind: 'schema',
+                  name,
+                  displayName: entry.metadata?.displayName || name,
+                  tagline: entry.metadata?.tagline || '',
+                  category: entry.metadata?.category,
+                  tags: entry.metadata?.tags,
+                  publisher: entry.metadata?.publisher,
+                  version: entry.latest,
+                  // Index metadata only — full schema body requires a fetch.
+                  schema: {},
+                }
+              : {
+                  schemaVersion: 1,
+                  name,
+                  displayName: entry.metadata?.displayName || name,
+                  tagline: entry.metadata?.tagline || '',
+                  category: entry.metadata?.category,
+                  tags: entry.metadata?.tags,
+                  publisher: entry.metadata?.publisher,
+                  version: entry.latest,
+                  prompt: '',
+                };
 
           if (matchesFilter(aspect, filters, filters.deep)) {
             results.push({

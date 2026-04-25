@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "kind": "schema",
+  "name": "example-archiform",
+  "publisher": "morphist",
+  "version": "0.1.0",
+  "displayName": "Example Archiform",
+  "tagline": "Tiny illustrative archiform — two node types and one edge type",
+  "category": "archiform",
+  "license": "MIT",
+  "schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://aspects.sh/morphist/example-archiform@0.1.0",
+    "title": "Example Archiform",
+    "description": "A minimal archiform fixture that exercises the schema-aspect round-trip end-to-end. Not a real DreamBall archiform — see dreamball/* for canonical archiforms.",
+    "type": "object",
+    "properties": {
+      "extends": {
+        "type": "string",
+        "const": "dreamball/root@2.0.0",
+        "description": "Root protocol this archiform builds on."
+      },
+      "nodes": {
+        "type": "object",
+        "description": "Node-type definitions.",
+        "properties": {
+          "Note": {
+            "type": "object",
+            "properties": {
+              "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+              "body": { "type": "string", "maxLength": 10000 },
+              "createdAt": { "type": "string", "format": "date-time" }
+            },
+            "required": ["title"]
+          },
+          "Tag": {
+            "type": "object",
+            "properties": {
+              "label": { "type": "string", "minLength": 1, "maxLength": 50 }
+            },
+            "required": ["label"]
+          }
+        }
+      },
+      "edges": {
+        "type": "object",
+        "description": "Edge-type definitions.",
+        "properties": {
+          "tagged": {
+            "type": "object",
+            "properties": {
+              "from": { "type": "string", "const": "Note" },
+              "to": { "type": "string", "const": "Tag" }
+            },
+            "required": ["from", "to"]
+          }
+        }
+      }
+    },
+    "required": ["nodes", "edges"]
+  }
+}

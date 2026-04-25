@@ -1,6 +1,9 @@
+import { stat } from 'node:fs/promises';
+import { join } from 'node:path';
 import { defineCommand } from 'citty';
 import { log } from '../utils/logger';
 import { findAndLoadAspect } from '../lib/aspect-loader';
+import { parseAspectFile } from '../lib/parser';
 import { getAspectDetail } from '../lib/registry';
 import { c, icons } from '../utils/colors';
 
@@ -17,54 +20,34 @@ export default defineCommand({
     },
   },
   async run({ args }) {
+    // Path-form (`./foo`, `/abs/foo`, or `foo.json`) — load directly from disk
+    // so users can inspect an aspect without installing it first.
+    if (args.name.startsWith('.') || args.name.startsWith('/') || args.name.endsWith('.json')) {
+      let filePath = args.name;
+      try {
+        const stats = await stat(args.name);
+        if (stats.isDirectory()) filePath = join(args.name, 'aspect.json');
+      } catch {
+        log.error(`Path not found: ${args.name}`);
+        process.exit(1);
+      }
+
+      const result = await parseAspectFile(filePath);
+      if (!result.success) {
+        log.error(`Invalid aspect: ${result.errors.join(', ')}`);
+        process.exit(1);
+      }
+
+      renderAspect(result.aspect, { scope: 'path', source: filePath });
+      return;
+    }
+
     // Search both project and global scopes
     const found = await findAndLoadAspect(args.name);
 
     // If installed locally, show local info
     if (found) {
-      const { aspect, scope, meta: installMeta } = found;
-
-      console.log();
-      console.log(`${c.bold(aspect.displayName)} ${c.muted('(')}${c.aspect(aspect.name)}${c.version(`@${aspect.version}`)}${c.muted(')')} ${c.dim(`[${scope}]`)}`);
-      console.log();
-      console.log(`  ${c.italic(aspect.tagline)}`);
-      console.log();
-
-      const displayMeta: [string, string][] = [];
-      if (aspect.publisher) displayMeta.push(['Publisher', aspect.publisher]);
-      if (aspect.author) displayMeta.push(['Author', aspect.author]);
-      if (aspect.license) displayMeta.push(['License', aspect.license]);
-      displayMeta.push(['Source', installMeta.source]);
-
-      if (displayMeta.length > 0) {
-        for (const [label, value] of displayMeta) {
-          console.log(`  ${c.label(label.padEnd(10))} ${c.value(value)}`);
-        }
-      }
-
-      if (aspect.voiceHints) {
-        console.log();
-        console.log(`  ${c.bold('Voice')}`);
-        if (aspect.voiceHints.speed) {
-          console.log(`    ${c.label('Speed')}     ${aspect.voiceHints.speed}`);
-        }
-        if (aspect.voiceHints.emotions?.length) {
-          console.log(`    ${c.label('Emotions')}  ${aspect.voiceHints.emotions.join(', ')}`);
-        }
-        if (aspect.voiceHints.styleHints) {
-          console.log(`    ${c.label('Style')}     ${c.muted(aspect.voiceHints.styleHints)}`);
-        }
-      }
-
-      if (aspect.modes && Object.keys(aspect.modes).length > 0) {
-        console.log();
-        console.log(`  ${c.bold('Modes')}`);
-        for (const [modeName, mode] of Object.entries(aspect.modes)) {
-          console.log(`    ${c.highlight(modeName)} ${icons.arrow} ${c.muted(mode.description)}`);
-        }
-      }
-
-      console.log();
+      renderAspect(found.aspect, { scope: found.scope, source: found.meta.source });
       return;
     }
 
@@ -128,6 +111,91 @@ export default defineCommand({
     }
   },
 });
+
+function renderAspect(
+  aspect: import('../lib/types').Aspect,
+  ctx: { scope: string; source: string },
+): void {
+  console.log();
+  console.log(
+    `${c.bold(aspect.displayName)} ${c.muted('(')}${c.aspect(aspect.name)}${c.version(`@${aspect.version}`)}${c.muted(')')} ${c.dim(`[${ctx.scope}]`)}`,
+  );
+  console.log();
+  console.log(`  ${c.italic(aspect.tagline)}`);
+  console.log();
+
+  const displayMeta: [string, string][] = [];
+  displayMeta.push(['Kind', aspect.kind ?? 'personality']);
+  if (aspect.publisher) displayMeta.push(['Publisher', aspect.publisher]);
+  if (aspect.author) displayMeta.push(['Author', aspect.author]);
+  if (aspect.license) displayMeta.push(['License', aspect.license]);
+  displayMeta.push(['Source', ctx.source]);
+  if (aspect.kind !== 'schema' && aspect.extendsSchema) {
+    displayMeta.push(['Extends', aspect.extendsSchema]);
+  }
+  for (const [label, value] of displayMeta) {
+    console.log(`  ${c.label(label.padEnd(10))} ${c.value(value)}`);
+  }
+
+  if (aspect.kind !== 'schema') {
+    if (aspect.voiceHints) {
+      console.log();
+      console.log(`  ${c.bold('Voice')}`);
+      if (aspect.voiceHints.speed) {
+        console.log(`    ${c.label('Speed')}     ${aspect.voiceHints.speed}`);
+      }
+      if (aspect.voiceHints.emotions?.length) {
+        console.log(`    ${c.label('Emotions')}  ${aspect.voiceHints.emotions.join(', ')}`);
+      }
+      if (aspect.voiceHints.styleHints) {
+        console.log(`    ${c.label('Style')}     ${c.muted(aspect.voiceHints.styleHints)}`);
+      }
+    }
+    if (aspect.modes && Object.keys(aspect.modes).length > 0) {
+      console.log();
+      console.log(`  ${c.bold('Modes')}`);
+      for (const [modeName, mode] of Object.entries(aspect.modes)) {
+        console.log(`    ${c.highlight(modeName)} ${icons.arrow} ${c.muted(mode.description)}`);
+      }
+    }
+  } else {
+    renderSchemaBody(aspect.schema);
+  }
+
+  console.log();
+}
+
+function renderSchemaBody(schema: Record<string, unknown>): void {
+  console.log();
+  console.log(`  ${c.bold('Schema')}`);
+  const $id = typeof schema.$id === 'string' ? schema.$id : undefined;
+  const $schema = typeof schema.$schema === 'string' ? schema.$schema : undefined;
+  const title = typeof schema.title === 'string' ? schema.title : undefined;
+  const type = typeof schema.type === 'string' ? schema.type : undefined;
+  if ($id) console.log(`    ${c.label('$id')}      ${c.value($id)}`);
+  if ($schema) console.log(`    ${c.label('Draft')}    ${c.muted($schema)}`);
+  if (title) console.log(`    ${c.label('Title')}    ${c.value(title)}`);
+  if (type) console.log(`    ${c.label('Type')}     ${c.muted(type)}`);
+
+  const properties =
+    schema.properties && typeof schema.properties === 'object' && !Array.isArray(schema.properties)
+      ? (schema.properties as Record<string, unknown>)
+      : undefined;
+  if (properties) {
+    const keys = Object.keys(properties);
+    if (keys.length > 0) {
+      console.log(`    ${c.label('Top-level')}`);
+      for (const k of keys) {
+        const v = properties[k];
+        const constVal =
+          v && typeof v === 'object' && 'const' in v && typeof (v as { const: unknown }).const === 'string'
+            ? ` ${c.muted('=')} ${c.muted((v as { const: string }).const)}`
+            : '';
+        console.log(`      ${icons.bullet} ${c.highlight(k)}${constVal}`);
+      }
+    }
+  }
+}
 
 function formatNumber(n: number): string {
   if (n >= 1000) {

@@ -15,7 +15,8 @@
         "tagline": "Quirky wizard, D&D expert, can run campaigns",
         "category": "roleplay",
         "publisher": "morphist",
-        "trust": "verified"
+        "trust": "verified",
+        "kind": "personality"
       }
     },
     "default": {
@@ -31,7 +32,8 @@
         "tagline": "Helpful voice AI assistant",
         "category": "assistant",
         "publisher": "morphist",
-        "trust": "verified"
+        "trust": "verified",
+        "kind": "personality"
       }
     },
     "aspect-creator": {
@@ -51,7 +53,25 @@
         "tagline": "Design and create custom AI personality aspects",
         "category": "creative",
         "publisher": "aimorphist",
-        "trust": "verified"
+        "trust": "verified",
+        "kind": "personality"
+      }
+    },
+    "example-archiform": {
+      "latest": "0.1.0",
+      "versions": {
+        "0.1.0": {
+          "published": "2026-04-25T00:00:00Z",
+          "url": "https://raw.githubusercontent.com/aimorphist/aspects/main/registry/aspects/example-archiform/aspect.json"
+        }
+      },
+      "metadata": {
+        "displayName": "Example Archiform",
+        "tagline": "Tiny illustrative archiform — two node types and one edge type",
+        "category": "archiform",
+        "publisher": "morphist",
+        "trust": "community",
+        "kind": "schema"
       }
     }
   },

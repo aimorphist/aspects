@@ -1,7 +1,12 @@
 /**
- * Aspect package schema (parsed from aspect.json)
+ * Aspect kinds. `personality` is the original prompt-bearing aspect; `schema`
+ * carries a JSON Schema document (e.g. for DreamBall archiform definitions).
+ * Aspects authored before this discriminator existed are treated as `personality`
+ * at parse time without rewriting the file on disk.
  */
-export interface Aspect {
+export type AspectKind = 'personality' | 'schema';
+
+interface AspectBase {
   schemaVersion: number;
   name: string;
   publisher?: string;
@@ -13,15 +18,42 @@ export interface Aspect {
   icon?: string;
   author?: string;
   license?: string;
+}
 
+export interface PersonalityAspect extends AspectBase {
+  /**
+   * Optional on personality aspects: absence is the back-compat default.
+   * Absence and the explicit value `"personality"` are semantically identical.
+   */
+  kind?: 'personality';
   voiceHints?: {
     speed?: 'slow' | 'normal' | 'fast';
     emotions?: string[];
     styleHints?: string;
   };
-
   prompt: string;
+  /**
+   * Optional pointer declaring this personality is a manifestation of a
+   * schema-aspect — `<publisher>/<name>@<semver>` or `blake3:<hash>`.
+   */
+  extendsSchema?: string;
+  /**
+   * Legacy/aux fields baked into the prompt by older create flows.
+   * Kept as a typed escape hatch for older fixtures and the `compile` command;
+   * the schema does not currently validate or write these.
+   */
+  modes?: Record<string, { description: string; critical?: string }>;
+  directives?: Array<{ id: string; rule: string; priority: string }>;
+  instructions?: Array<{ id: string; rule: string }>;
 }
+
+export interface SchemaAspect extends AspectBase {
+  kind: 'schema';
+  /** A JSON Schema document (typically draft 2020-12). Validity meta-checked at parse. */
+  schema: Record<string, unknown>;
+}
+
+export type Aspect = PersonalityAspect | SchemaAspect;
 
 /**
  * Aspect summary for registry listing (without full prompt)
@@ -34,6 +66,7 @@ export interface AspectSummary {
   publisher?: string;
   trust: 'verified' | 'community' | 'local';
   signature?: string;
+  kind?: AspectKind;
 }
 
 /**
@@ -136,6 +169,7 @@ export interface RegistryAspect {
     tags?: string[];
     publisher?: string;
     trust: 'verified' | 'community';
+    kind?: AspectKind;
   };
 }
 

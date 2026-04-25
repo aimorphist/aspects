@@ -87,6 +87,32 @@ If run inside the aspects registry repo, automatically offers to:
   async run({ args }) {
     p.intro("✨ Create a new aspect");
 
+    const kindChoice = await p.select({
+      message: "What kind of aspect?",
+      options: [
+        {
+          value: "personality",
+          label: "Personality",
+          hint: "An AI persona — prompt, voice, modes",
+        },
+        {
+          value: "schema",
+          label: "Schema",
+          hint: "A JSON Schema document — defines a kind of agent/artifact (e.g. a DreamBall archiform)",
+        },
+      ],
+      initialValue: "personality",
+    });
+    if (p.isCancel(kindChoice)) {
+      p.cancel("Cancelled");
+      process.exit(0);
+    }
+
+    if (kindChoice === "schema") {
+      await runSchemaCreate(args.path as string | undefined);
+      return;
+    }
+
     // Detect if we're in the aspects repo
     const cwd = process.cwd();
     let inRegistry = false;
@@ -433,6 +459,7 @@ All of these get compiled directly into the prompt text.
     // Build the aspect object
     const aspect: Record<string, unknown> = {
       schemaVersion: 1,
+      kind: "personality",
       name: aspectName,
       publisher: "anon-user",
       version: "1.0.0",
@@ -622,6 +649,127 @@ async function addToRegistryIndex(
 
   // Write back
   await writeFile(indexPath, JSON.stringify(index, null, 2) + "\n");
+}
+
+async function runSchemaCreate(pathArg: string | undefined): Promise<void> {
+  const cwd = process.cwd();
+
+  const answers = await p.group(
+    {
+      publisher: () =>
+        p.text({
+          message: "Publisher (handle or namespace)",
+          placeholder: "your-handle",
+          initialValue: "anon-user",
+          validate: (v) => {
+            if (!v) return "Publisher is required";
+            if (!/^[a-z0-9-]+$/.test(v)) return "Lowercase letters, numbers, hyphens only";
+          },
+        }),
+      name: () =>
+        p.text({
+          message: "Schema name (slug)",
+          placeholder: "example-archiform",
+          validate: (v) => {
+            if (!v) return "Name is required";
+            if (!/^[a-z0-9-]+$/.test(v)) return "Lowercase letters, numbers, hyphens only";
+          },
+        }),
+      version: () =>
+        p.text({
+          message: "Version",
+          placeholder: "0.1.0",
+          initialValue: "0.1.0",
+          validate: (v) => {
+            if (!/^\d+\.\d+\.\d+/.test(v ?? "")) return "Use semver, e.g. 0.1.0";
+          },
+        }),
+      displayName: () =>
+        p.text({
+          message: "Display name",
+          placeholder: "Example Archiform",
+          validate: (v) => {
+            if (!v) return "Display name is required";
+          },
+        }),
+      tagline: () =>
+        p.text({
+          message: "Tagline",
+          placeholder: "A small illustrative archiform with two node types",
+          validate: (v) => {
+            if (!v) return "Tagline is required";
+            if (v.length < 10) return "Tagline must be at least 10 characters";
+          },
+        }),
+      category: () =>
+        p.text({
+          message: "Category",
+          placeholder: "archiform",
+          initialValue: "archiform",
+        }),
+    },
+    {
+      onCancel: () => {
+        p.cancel("Cancelled");
+        process.exit(0);
+      },
+    },
+  );
+
+  const $id = `https://aspects.sh/${answers.publisher}/${answers.name}@${answers.version}`;
+  // Always scaffold a stub. If the user already has a JSON Schema document,
+  // they can paste it into the generated `aspect.json`'s `schema` field after
+  // create finishes — keeping `create` purely as scaffolding avoids confusing
+  // "use a schema to make a schema" semantics.
+  const schemaBody: Record<string, unknown> = {
+    $schema: "https://json-schema.org/draft/2020-12/schema",
+    $id,
+    title: answers.displayName as string,
+    type: "object",
+    properties: {
+      nodes: {
+        type: "object",
+        description: "Node-type definitions for this archiform.",
+        properties: {
+          ExampleNodeA: { type: "object", properties: { name: { type: "string" } } },
+          ExampleNodeB: { type: "object", properties: { count: { type: "integer" } } },
+        },
+      },
+      edges: {
+        type: "object",
+        description: "Edge-type definitions for this archiform.",
+        properties: {
+          connects: {
+            type: "object",
+            properties: {
+              from: { type: "string", const: "ExampleNodeA" },
+              to: { type: "string", const: "ExampleNodeB" },
+            },
+          },
+        },
+      },
+    },
+  };
+
+  const aspect = {
+    schemaVersion: 1,
+    kind: "schema" as const,
+    name: answers.name as string,
+    publisher: answers.publisher as string,
+    version: answers.version as string,
+    displayName: answers.displayName as string,
+    tagline: answers.tagline as string,
+    category: (answers.category as string) || "archiform",
+    schema: schemaBody,
+  };
+
+  const outputDir = pathArg ?? join(cwd, aspect.name);
+  const outputPath = join(outputDir, "aspect.json");
+  await mkdir(outputDir, { recursive: true });
+  await writeFile(outputPath, JSON.stringify(aspect, null, 2) + "\n");
+  p.log.success(`Created ${outputPath}`);
+  p.log.info("Edit the `schema` field in the generated aspect.json to define your nodes/edges/actions, or paste in an existing JSON Schema document.");
+  p.outro("Schema-aspect ready. Inspect with `aspects info <path>` or share with `aspects share <path>`.");
 }
 
 function generatePrompt(

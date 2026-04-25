@@ -58,6 +58,11 @@ export function parseAspectJson(content: string): ParseResult {
   if (!('version' in rawObj)) {
     warnings.push('Missing version, defaulting to "0.0.0"');
   }
+  // `kind` defaults to "personality" for back-compat with aspects authored
+  // before the discriminator existed. Silent — no warning — because every
+  // pre-existing personality aspect would otherwise get noisy.
+  // Note: this default lives in the schema's preprocess step too; we don't
+  // mutate rawObj here so the on-disk canonical hash is preserved.
 
   const result = aspectSchema.safeParse(rawObj);
 
