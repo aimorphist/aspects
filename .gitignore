@@ -36,5 +36,11 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # OMC runtime state (tracked plans + counters stay in git)
 .omc/state/
+.omc/sessions/
 .omc/drafts/
 .omc/project-memory.json
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key
