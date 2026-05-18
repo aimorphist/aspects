@@ -2,6 +2,10 @@
 
 > Update the Aspects CLI to support registry-claimed handles per the Identity and Namespaces design doc.
 
+## ✅ STATUS: COMPLETE (2026-05-18)
+
+Implemented. CLI ships `handle` and `whoami` commands, login flow claims handles via `needs_handle`, and `publish` validates against handle permissions. Webapp side (`/api/v1/handles/*`, `/api/v1/account`) is also complete per `aspects-webapp/docs/epics/00-overview.md`.
+
 ## Summary
 
 This plan adds account and handle management to the CLI, replacing the current JWT-username-based identity with registry-claimed handles. Users will claim handles on first login, and all publishing will be validated against handle permissions.

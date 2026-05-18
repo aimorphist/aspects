@@ -2,6 +2,13 @@
 
 > Migrate from SHA-256 to Blake3, add hash-based install (`aspects add hash:<blake3hash>`), add `share` and `unpublish` commands. Aligns the CLI client with `docs/client-implementation-guide.md`.
 
+## ✅ STATUS: COMPLETE (2026-05-18)
+
+Implemented. Divergences from this plan:
+- Uses `@noble/hashes/blake3.js` instead of `hash-wasm` (Bun-native, no WASM init step)
+- Install prefix is `blake3:<hash>`; resolver also accepts legacy `hash:<hash>`
+- No SHA-256 helper retained — all references removed from `src/`
+
 ---
 
 ## Decisions
