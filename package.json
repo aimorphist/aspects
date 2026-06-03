@@ -24,6 +24,21 @@
     "cli",
     "package-manager"
   ],
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "import": "./src/index.ts",
+      "types": "./src/index.ts"
+    },
+    "./store": {
+      "import": "./src/store/index.ts",
+      "types": "./src/store/index.ts"
+    },
+    "./cli": {
+      "import": "./src/cli.ts"
+    }
+  },
   "bin": {
     "aspects": "dist/cli.js"
   },
@@ -55,6 +70,7 @@
   },
   "dependencies": {
     "@bcts/dcbor": "1.0.0-beta.0",
+    "@bcts/envelope": "^1.0.0-alpha.23",
     "@clack/prompts": "^0.11.0",
     "@noble/hashes": "^2.0.1",
     "@scure/base": "^2.0.0",

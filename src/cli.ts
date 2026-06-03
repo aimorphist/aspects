@@ -28,6 +28,7 @@ import config from "./commands/config";
 import init from "./commands/init";
 import handle from "./commands/handle";
 import whoami from "./commands/whoami";
+import serve from "./commands/serve";
 
 // Alias map: short/alternate names -> canonical command
 const ALIASES: Record<string, string> = {
@@ -91,6 +92,7 @@ const COMMANDS: Array<{
   { name: "handle", cmd: handle, desc: "Manage your handles (namespaces)", aliases: ["h"] },
   { name: "whoami", cmd: whoami, desc: "Show your current identity" },
   { name: "config", cmd: config, desc: "View and modify configuration" },
+  { name: "serve", cmd: serve, desc: "Run a local registry server" },
 ];
 
 // Custom help renderer
