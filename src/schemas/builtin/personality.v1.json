@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aspects.sh/schemas/builtin/personality/v1",
+  "title": "PersonalityAspect data payload",
+  "description": "Data fields for a personality-kind aspect (the prompt and associated voice/schema hints).",
+  "type": "object",
+  "required": ["prompt"],
+  "additionalProperties": false,
+  "properties": {
+    "prompt": {
+      "type": "string",
+      "minLength": 10,
+      "maxLength": 50000,
+      "description": "The personality prompt text."
+    },
+    "voiceHints": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "speed": {
+          "type": "string",
+          "enum": ["slow", "normal", "fast"],
+          "description": "Suggested speech rate."
+        },
+        "emotions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 30
+          },
+          "maxItems": 10,
+          "description": "List of emotion labels to convey."
+        },
+        "styleHints": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "Free-form style guidance for voice rendering."
+        }
+      },
+      "description": "Optional hints for voice/TTS rendering."
+    },
+    "extendsSchema": {
+      "type": "string",
+      "pattern": "^(?:[a-z0-9-]+/[a-z0-9-]+@\\d+\\.\\d+\\.\\d+|blake3:[1-9A-HJ-NP-Za-km-z]+)$",
+      "description": "Optional pointer to a schema-aspect this personality manifests: publisher/name@x.y.z or blake3:<hash>."
+    },
+    "modes": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["description"],
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "critical": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Named operating modes with descriptions and optional critical constraints."
+    },
+    "directives": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "rule", "priority"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "rule": {
+            "type": "string"
+          },
+          "priority": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Ordered list of behavioral directives."
+    },
+    "instructions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "rule"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "rule": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "Supplemental instruction entries."
+    }
+  }
+}

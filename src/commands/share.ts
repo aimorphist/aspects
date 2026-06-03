@@ -9,6 +9,8 @@ import { parseAspectFile } from '../lib/parser';
 import { publishAnonymous, ApiClientError } from '../lib/api-client';
 import { c, icons } from '../utils/colors';
 import type { Aspect } from '../lib/types';
+import { isGeneralAspect } from '../lib/types';
+import { getSchemaRegistry } from '../lib/schema-registry';
 
 const MAX_ASPECT_SIZE = 51200; // 50KB
 
@@ -115,6 +117,19 @@ Want to claim a name instead? Use 'aspects publish' (requires login).`,
       
       p.log.info(`Found: ${c.aspect(target)} ${c.dim(`[${found.scope}]`)}`);
       aspect = found.aspect;
+    }
+
+    // For GeneralAspects, validate data against declared schemas
+    if (isGeneralAspect(aspect)) {
+      const registry = getSchemaRegistry();
+      const schemaResult = registry.validate(aspect);
+      if (!schemaResult.valid) {
+        p.log.error('Schema validation failed:');
+        for (const err of schemaResult.errors) {
+          p.log.error(`  ${icons.bullet} ${err}`);
+        }
+        process.exit(1);
+      }
     }
 
     // Serialize for hashing and size check (canonicalized JSON matches server)

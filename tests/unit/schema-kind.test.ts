@@ -1,5 +1,7 @@
 import { describe, test, expect } from 'bun:test';
 import { parseAspectJson } from '../../src/lib/parser';
+import { isLegacyAspect } from '../../src/lib/types';
+import type { PersonalityAspect, SchemaAspect } from '../../src/lib/types';
 
 const VALID_PERSONALITY = {
   schemaVersion: 1,
@@ -40,7 +42,7 @@ describe('aspect kind back-compat', () => {
     expect(result.success).toBe(true);
     if (result.success) {
       // kind is left absent so the canonicalized form matches old hashes.
-      expect(result.aspect.kind).toBeUndefined();
+      expect(isLegacyAspect(result.aspect) && result.aspect.kind).toBeUndefined();
       // But it is still treated as a personality aspect — the prompt field is present.
       expect((result.aspect as { prompt?: string }).prompt).toBe('You are a helpful assistant.');
     }
@@ -50,7 +52,7 @@ describe('aspect kind back-compat', () => {
     const result = parseAspectJson(JSON.stringify({ ...VALID_PERSONALITY, kind: 'personality' }));
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.aspect.kind).toBe('personality');
+      expect(isLegacyAspect(result.aspect) && result.aspect.kind).toBe('personality');
     }
   });
 
@@ -58,7 +60,7 @@ describe('aspect kind back-compat', () => {
     const aspect = { ...VALID_PERSONALITY, extendsSchema: 'morphist/example-archiform@0.1.0' };
     const result = parseAspectJson(JSON.stringify(aspect));
     expect(result.success).toBe(true);
-    if (result.success && result.aspect.kind === 'personality') {
+    if (result.success && isLegacyAspect(result.aspect) && result.aspect.kind !== 'schema') {
       expect(result.aspect.extendsSchema).toBe('morphist/example-archiform@0.1.0');
     }
   });
@@ -80,7 +82,7 @@ describe('schema-aspect kind', () => {
   test('parses a valid schema-aspect', () => {
     const result = parseAspectJson(JSON.stringify(VALID_SCHEMA_ASPECT));
     expect(result.success).toBe(true);
-    if (result.success && result.aspect.kind === 'schema') {
+    if (result.success && isLegacyAspect(result.aspect) && result.aspect.kind === 'schema') {
       expect(result.aspect.schema.$id).toBe('https://aspects.sh/morphist/example-archiform@0.1.0');
       expect((result.aspect.schema as { title: string }).title).toBe('Example');
     }

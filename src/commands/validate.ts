@@ -2,10 +2,12 @@ import { readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { defineCommand } from "citty";
 import * as p from "@clack/prompts";
-import { aspectSchema, OFFICIAL_CATEGORIES } from "../lib/schema";
+import { aspectSchema, OFFICIAL_CATEGORIES, type PersonalityAspectFromSchema, type SchemaAspectFromSchema } from "../lib/schema";
 import { findInstalledAspect } from "../lib/config";
 import { findProjectRoot, getAspectPath } from "../utils/paths";
 import { c } from "../utils/colors";
+import { isGeneralAspect } from "../lib/types";
+import { getSchemaRegistry } from "../lib/schema-registry";
 
 export default defineCommand({
   meta: {
@@ -116,13 +118,16 @@ Security scan flags patterns like:
     }
 
     const aspect = result.data;
+    const isGeneral = 'implements' in aspect;
+    const isSchema = !isGeneral && 'kind' in aspect && aspect.kind === 'schema';
+    const kindLabel = isGeneral ? 'general' : (isSchema ? 'schema' : 'personality');
 
     // Basic validation passed
     const checks: Array<{ label: string; passed: boolean; message?: string }> =
       [
         { label: "Required fields present", passed: true },
         { label: "Schema version valid", passed: aspect.schemaVersion === 1 },
-        { label: `Kind: ${aspect.kind ?? 'personality'}`, passed: true },
+        { label: `Kind: ${kindLabel}`, passed: true },
         {
           // Schema already enforces format (alphanumeric + hyphens, 2-20 chars).
           // Custom categories are allowed; OFFICIAL_CATEGORIES is just a hint.
@@ -133,8 +138,23 @@ Security scan flags patterns like:
         },
       ];
 
-    if (aspect.kind !== 'schema') {
-      checks.push({ label: "Prompt not empty", passed: aspect.prompt.length > 0 });
+    if (isGeneral) {
+      checks.push({ label: "Implements declared", passed: true });
+      const generalAspect = aspect as any;
+      for (const ref of generalAspect.implements) {
+        checks.push({ label: `Implements: ${ref}`, passed: true });
+      }
+      // Validate data against declared schemas
+      const registry = getSchemaRegistry();
+      const schemaResult = registry.validate(generalAspect);
+      checks.push({
+        label: "Data validates against declared schemas",
+        passed: schemaResult.valid,
+        message: schemaResult.valid ? undefined : schemaResult.errors.join('; '),
+      });
+    } else if (!isSchema) {
+      const personality = aspect as PersonalityAspectFromSchema;
+      checks.push({ label: "Prompt not empty", passed: personality.prompt.length > 0 });
     } else {
       // Schema body well-formedness was already checked by Zod via ajv.
       checks.push({ label: "Schema body is valid JSON Schema", passed: true });
@@ -158,8 +178,11 @@ Security scan flags patterns like:
         message: validVersion ? undefined : `Got: "${aspect.version}"`,
       });
 
-      if (aspect.kind !== 'schema') {
-        const promptLength = aspect.prompt.length;
+      if (isGeneral) {
+        // General aspects: no strict personality/schema checks yet
+      } else if (!isSchema) {
+        const personality = aspect as PersonalityAspectFromSchema;
+        const promptLength = personality.prompt.length;
         const promptOk = promptLength >= 100;
         checks.push({
           label: "Prompt length (min 100 chars)",
@@ -168,10 +191,11 @@ Security scan flags patterns like:
         });
         checks.push({
           label: "Voice hints present",
-          passed: !!aspect.voiceHints,
+          passed: !!personality.voiceHints,
         });
       } else {
-        const body = aspect.schema as Record<string, unknown>;
+        const schema = aspect as SchemaAspectFromSchema;
+        const body = schema.schema as Record<string, unknown>;
         const has$id = typeof body.$id === 'string';
         const hasTitle = typeof body.title === 'string';
         checks.push({ label: "Schema has $id", passed: has$id });
@@ -179,8 +203,9 @@ Security scan flags patterns like:
       }
     }
 
-    // Security scan (personality only — schema bodies have no prompt text)
-    if (args.security && aspect.kind === 'personality') {
+    // Security scan (personality only — schema/general bodies have no prompt text)
+    if (args.security && !isSchema && !isGeneral) {
+      const personality = aspect as PersonalityAspectFromSchema;
       const suspiciousPatterns = [
         { pattern: /ignore\s+(all\s+)?previous\s+instructions/i, name: "Ignore previous instructions" },
         { pattern: /you\s+are\s+now\s+DAN/i, name: "DAN jailbreak" },
@@ -191,7 +216,7 @@ Security scan flags patterns like:
       ];
 
       for (const { pattern, name } of suspiciousPatterns) {
-        const found = pattern.test(aspect.prompt);
+        const found = pattern.test(personality.prompt);
         checks.push({
           label: `No "${name}" pattern`,
           passed: !found,

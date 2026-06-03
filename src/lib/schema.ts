@@ -216,16 +216,29 @@ export const schemaAspectSchema = z.object({
 });
 
 /**
- * Aspect schema. Schema-aspects MUST declare `kind: "schema"` explicitly;
- * everything else is treated as a personality aspect. We deliberately do NOT
- * inject a default `kind` value, so an aspect authored before the discriminator
- * existed parses to the exact same object — preserving its canonical hash.
+ * General-purpose aspect schema. Aspects declare which schema(s) they implement
+ * via `implements` and carry their payload in `data`.
+ */
+export const generalAspectSchema = z.object({
+  ...baseShape,
+  implements: z.array(z.string().min(1)).min(1, 'at least one schema ref required'),
+  data: z.unknown(),
+});
+
+/**
+ * Aspect schema. The general schema is first so it matches before legacy schemas
+ * when `implements` is present. Schema-aspects MUST declare `kind: "schema"`
+ * explicitly; everything else without `implements` is treated as a personality
+ * aspect. We deliberately do NOT inject a default `kind` value, so an aspect
+ * authored before the discriminator existed parses to the exact same object —
+ * preserving its canonical hash.
  *
  * Implemented as `z.union` (not `z.discriminatedUnion`) because the discriminator
  * is optional on the personality branch.
  */
-export const aspectSchema = z.union([schemaAspectSchema, personalityAspectSchema]);
+export const aspectSchema = z.union([generalAspectSchema, schemaAspectSchema, personalityAspectSchema]);
 
 export type AspectFromSchema = z.infer<typeof aspectSchema>;
 export type PersonalityAspectFromSchema = z.infer<typeof personalityAspectSchema>;
 export type SchemaAspectFromSchema = z.infer<typeof schemaAspectSchema>;
+export type GeneralAspectFromSchema = z.infer<typeof generalAspectSchema>;

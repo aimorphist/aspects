@@ -32,6 +32,7 @@ const {
   getAspectVersion,
   getAspectByHash,
   searchAspects,
+  getSchema,
   publishAspect,
   unpublishAspect,
   getStats,
@@ -158,6 +159,20 @@ describe("api-client", () => {
       await searchAspects({ q: "test", offset: 20 });
       expect(ofetchCalls[0]!.url).toContain("offset=20");
     });
+
+    test("includes implements in query string when provided", async () => {
+      ofetchImpl = async () => ({ total: 0, results: [] });
+      await searchAspects({ q: "wizard", implements: "builtin/personality@1.0.0" });
+      const url = ofetchCalls[0]!.url;
+      expect(url).toContain("implements=builtin%2Fpersonality%401.0.0");
+      expect(url).toContain("q=wizard");
+    });
+
+    test("omits implements from query string when not provided", async () => {
+      ofetchImpl = async () => ({ total: 0, results: [] });
+      await searchAspects({ q: "wizard" });
+      expect(ofetchCalls[0]!.url).not.toContain("implements");
+    });
   });
 
   describe("error handling", () => {
@@ -224,6 +239,43 @@ describe("api-client", () => {
       await getCategories();
       await getCategories();
       expect(ofetchCalls).toHaveLength(1);
+    });
+  });
+
+  describe("getSchema", () => {
+    test("fetches schema by ref", async () => {
+      const fakeSchema = { $schema: "https://json-schema.org/draft/2020-12/schema", type: "object" };
+      ofetchImpl = async () => fakeSchema;
+      const result = await getSchema("custom/my-schema@1.0.0");
+      expect(result).toEqual(fakeSchema);
+      expect(ofetchCalls[0]!.url).toContain("/schemas/custom%2Fmy-schema%401.0.0");
+    });
+
+    test("returns null on 404", async () => {
+      ofetchImpl = async () => {
+        const err = new Error("Not found") as Error & { statusCode: number; data: unknown };
+        err.statusCode = 404;
+        err.data = { error: "not_found", message: "Schema not found" };
+        throw err;
+      };
+      const result = await getSchema("unknown/schema@1.0.0");
+      expect(result).toBeNull();
+    });
+
+    test("rethrows non-404 errors", async () => {
+      ofetchImpl = async () => {
+        const err = new Error("Server error") as Error & { statusCode: number; data: unknown };
+        err.statusCode = 500;
+        err.data = { error: "server_error", message: "Internal error" };
+        throw err;
+      };
+      try {
+        await getSchema("some/schema@1.0.0");
+        expect.unreachable("Should have thrown");
+      } catch (err) {
+        expect(err).toBeInstanceOf(ApiClientError);
+        expect((err as InstanceType<typeof ApiClientError>).statusCode).toBe(500);
+      }
     });
   });
 

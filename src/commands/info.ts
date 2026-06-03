@@ -116,6 +116,8 @@ function renderAspect(
   aspect: import('../lib/types').Aspect,
   ctx: { scope: string; source: string },
 ): void {
+  const { isGeneralAspect, isLegacyAspect } = require('../lib/types') as typeof import('../lib/types');
+
   console.log();
   console.log(
     `${c.bold(aspect.displayName)} ${c.muted('(')}${c.aspect(aspect.name)}${c.version(`@${aspect.version}`)}${c.muted(')')} ${c.dim(`[${ctx.scope}]`)}`,
@@ -125,41 +127,48 @@ function renderAspect(
   console.log();
 
   const displayMeta: [string, string][] = [];
-  displayMeta.push(['Kind', aspect.kind ?? 'personality']);
+  if (isGeneralAspect(aspect)) {
+    displayMeta.push(['Format', 'general']);
+    displayMeta.push(['Implements', aspect.implements.join(', ')]);
+  } else {
+    displayMeta.push(['Kind', aspect.kind ?? 'personality']);
+  }
   if (aspect.publisher) displayMeta.push(['Publisher', aspect.publisher]);
   if (aspect.author) displayMeta.push(['Author', aspect.author]);
   if (aspect.license) displayMeta.push(['License', aspect.license]);
   displayMeta.push(['Source', ctx.source]);
-  if (aspect.kind !== 'schema' && aspect.extendsSchema) {
+  if (isLegacyAspect(aspect) && aspect.kind !== 'schema' && aspect.extendsSchema) {
     displayMeta.push(['Extends', aspect.extendsSchema]);
   }
   for (const [label, value] of displayMeta) {
     console.log(`  ${c.label(label.padEnd(10))} ${c.value(value)}`);
   }
 
-  if (aspect.kind !== 'schema') {
-    if (aspect.voiceHints) {
-      console.log();
-      console.log(`  ${c.bold('Voice')}`);
-      if (aspect.voiceHints.speed) {
-        console.log(`    ${c.label('Speed')}     ${aspect.voiceHints.speed}`);
+  if (isLegacyAspect(aspect)) {
+    if (aspect.kind !== 'schema') {
+      if (aspect.voiceHints) {
+        console.log();
+        console.log(`  ${c.bold('Voice')}`);
+        if (aspect.voiceHints.speed) {
+          console.log(`    ${c.label('Speed')}     ${aspect.voiceHints.speed}`);
+        }
+        if (aspect.voiceHints.emotions?.length) {
+          console.log(`    ${c.label('Emotions')}  ${aspect.voiceHints.emotions.join(', ')}`);
+        }
+        if (aspect.voiceHints.styleHints) {
+          console.log(`    ${c.label('Style')}     ${c.muted(aspect.voiceHints.styleHints)}`);
+        }
       }
-      if (aspect.voiceHints.emotions?.length) {
-        console.log(`    ${c.label('Emotions')}  ${aspect.voiceHints.emotions.join(', ')}`);
+      if (aspect.modes && Object.keys(aspect.modes).length > 0) {
+        console.log();
+        console.log(`  ${c.bold('Modes')}`);
+        for (const [modeName, mode] of Object.entries(aspect.modes)) {
+          console.log(`    ${c.highlight(modeName)} ${icons.arrow} ${c.muted(mode.description)}`);
+        }
       }
-      if (aspect.voiceHints.styleHints) {
-        console.log(`    ${c.label('Style')}     ${c.muted(aspect.voiceHints.styleHints)}`);
-      }
+    } else {
+      renderSchemaBody(aspect.schema);
     }
-    if (aspect.modes && Object.keys(aspect.modes).length > 0) {
-      console.log();
-      console.log(`  ${c.bold('Modes')}`);
-      for (const [modeName, mode] of Object.entries(aspect.modes)) {
-        console.log(`    ${c.highlight(modeName)} ${icons.arrow} ${c.muted(mode.description)}`);
-      }
-    }
-  } else {
-    renderSchemaBody(aspect.schema);
   }
 
   console.log();

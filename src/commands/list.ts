@@ -4,7 +4,8 @@ import { loadInstalledAspect } from '../lib/aspect-loader';
 import { c, icons, formatAspectLine, type AspectDisplayInfo } from '../utils/colors';
 import { findProjectRoot, type InstallScope } from '../utils/paths';
 import { blake3HashAspect } from '../utils/hash';
-import type { InstalledAspect } from '../lib/types';
+import type { InstalledAspect, Aspect } from '../lib/types';
+import { isGeneralAspect } from '../lib/types';
 
 interface GroupedAspect {
   name: string;
@@ -16,6 +17,7 @@ interface GroupedAspect {
   specifier?: string;  // May be undefined for legacy installs
   tagline?: string;
   isModified?: boolean;
+  implements?: string[];
 }
 
 export default defineCommand({
@@ -87,6 +89,7 @@ export default defineCommand({
           specifier: item.specifier,
           tagline: aspect?.tagline,
           isModified,
+          implements: aspect && isGeneralAspect(aspect as Aspect) ? (aspect as any).implements : undefined,
         });
       }
     }
@@ -99,6 +102,9 @@ export default defineCommand({
       // Sort scopes for consistent display: project before global
       item.scopes.sort((a, b) => a === 'project' ? -1 : 1);
       console.log(formatAspectLine(item));
+      if (item.implements && item.implements.length > 0) {
+        console.log(`    ${c.dim(`implements: ${item.implements.join(', ')}`)}`);
+      }
     }
 
     console.log();

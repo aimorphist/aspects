@@ -2,7 +2,7 @@ import { readFile, writeFile, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { defineCommand } from "citty";
 import * as p from "@clack/prompts";
-import { aspectSchema } from "../lib/schema";
+import { aspectSchema, type PersonalityAspectFromSchema } from "../lib/schema";
 import { ASPECTS_DIR } from "../utils/paths";
 
 export default defineCommand({
@@ -75,24 +75,32 @@ Examples:
 
     const aspect = result.data;
 
-    if (aspect.kind === 'schema') {
+    if ('kind' in aspect && aspect.kind === 'schema') {
       p.log.error(`Cannot compile schema-aspect "${aspect.name}" — schema aspects carry a JSON Schema body, not a prompt.`);
       p.log.info('Use `aspects info` to inspect a schema-aspect.');
       process.exit(1);
     }
 
+    if ('implements' in aspect) {
+      p.log.error(`Cannot compile general-aspect "${aspect.name}" — general aspects carry structured data, not a prompt.`);
+      p.log.info('Use `aspects info` to inspect a general-aspect.');
+      process.exit(1);
+    }
+
+    const personality = aspect as PersonalityAspectFromSchema;
+
     if (args.verbose) {
-      p.log.info(`Compiling ${aspect.name}@${aspect.version}`);
-      if (aspect.voiceHints) {
-        if (aspect.voiceHints.speed) p.log.info(`  Speed: ${aspect.voiceHints.speed}`);
-        if (aspect.voiceHints.emotions?.length) {
-          p.log.info(`  Emotions: ${aspect.voiceHints.emotions.join(", ")}`);
+      p.log.info(`Compiling ${personality.name}@${personality.version}`);
+      if (personality.voiceHints) {
+        if (personality.voiceHints.speed) p.log.info(`  Speed: ${personality.voiceHints.speed}`);
+        if (personality.voiceHints.emotions?.length) {
+          p.log.info(`  Emotions: ${personality.voiceHints.emotions.join(", ")}`);
         }
-        if (aspect.voiceHints.styleHints) p.log.info(`  Style: ${aspect.voiceHints.styleHints}`);
+        if (personality.voiceHints.styleHints) p.log.info(`  Style: ${personality.voiceHints.styleHints}`);
       }
     }
 
-    const compiled = aspect.prompt;
+    const compiled = personality.prompt;
 
     if (args.output) {
       await writeFile(args.output, compiled);

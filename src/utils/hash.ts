@@ -1,5 +1,7 @@
 import { blake3 } from '@noble/hashes/blake3.js';
 import { base58 } from '@scure/base';
+import { blake3HashDCBOR } from '../lib/canonical.js';
+import { isGeneralAspect, type Aspect } from '../lib/types.js';
 
 /**
  * Compute Blake3 hash of a string, returned as base58.
@@ -37,4 +39,17 @@ export function canonicalizeAspect(obj: unknown): string {
  */
 export function blake3HashAspect(aspect: object): string {
   return blake3Hash(canonicalizeAspect(aspect));
+}
+
+/**
+ * Compute the appropriate blake3 hash for an aspect.
+ * - Legacy aspects: JSON-canonical hash (preserves existing hashes, returns base58)
+ * - General aspects: dCBOR-canonical hash (new canonical form, returns hex)
+ */
+export function blake3HashAspectCanonical(aspect: Aspect): string {
+  if (isGeneralAspect(aspect)) {
+    return blake3HashDCBOR(aspect);
+  }
+  // Legacy: use existing JSON canonicalization
+  return blake3HashAspect(aspect);
 }

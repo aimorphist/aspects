@@ -97,8 +97,8 @@ If run inside the aspects registry repo, automatically offers to:
         },
         {
           value: "schema",
-          label: "Schema",
-          hint: "A JSON Schema document — defines a kind of agent/artifact (e.g. a DreamBall archiform)",
+          label: "Schema Definition",
+          hint: "A JSON Schema document — defines a kind of data",
         },
       ],
       initialValue: "personality",
@@ -456,10 +456,9 @@ All of these get compiled directly into the prompt text.
       }
     }
 
-    // Build the aspect object
+    // Build the aspect object using new implements+data format
     const aspect: Record<string, unknown> = {
       schemaVersion: 1,
-      kind: "personality",
       name: aspectName,
       publisher: "anon-user",
       version: "1.0.0",
@@ -480,19 +479,24 @@ All of these get compiled directly into the prompt text.
       aspect.license = answers.license;
     }
 
-    aspect.voiceHints = {
-      speed: answers.speed,
-      emotions: ["friendly"],
-      styleHints: "Speak naturally and warmly.",
-    };
+    aspect.implements = ["builtin/personality@1.0.0"];
 
     // Generate prompt based on style, with directives/instructions/modes baked in
-    aspect.prompt = generatePrompt(
+    const prompt = generatePrompt(
       answers.promptStyle as string,
       answers.displayName as string,
       answers.tagline as string,
       { directives, instructions, modes },
     );
+
+    aspect.data = {
+      prompt,
+      voiceHints: {
+        speed: answers.speed,
+        emotions: ["friendly"],
+        styleHints: "Speak naturally and warmly.",
+      },
+    };
 
     // Determine output path
     let outputDir: string;
@@ -753,14 +757,16 @@ async function runSchemaCreate(pathArg: string | undefined): Promise<void> {
 
   const aspect = {
     schemaVersion: 1,
-    kind: "schema" as const,
     name: answers.name as string,
     publisher: answers.publisher as string,
     version: answers.version as string,
     displayName: answers.displayName as string,
     tagline: answers.tagline as string,
     category: (answers.category as string) || "archiform",
-    schema: schemaBody,
+    implements: ["builtin/schema@1.0.0"],
+    data: {
+      schema: schemaBody,
+    },
   };
 
   const outputDir = pathArg ?? join(cwd, aspect.name);
@@ -768,7 +774,7 @@ async function runSchemaCreate(pathArg: string | undefined): Promise<void> {
   await mkdir(outputDir, { recursive: true });
   await writeFile(outputPath, JSON.stringify(aspect, null, 2) + "\n");
   p.log.success(`Created ${outputPath}`);
-  p.log.info("Edit the `schema` field in the generated aspect.json to define your nodes/edges/actions, or paste in an existing JSON Schema document.");
+  p.log.info("Edit the `data.schema` field in the generated aspect.json to define your nodes/edges/actions, or paste in an existing JSON Schema document.");
   p.outro("Schema-aspect ready. Inspect with `aspects info <path>` or share with `aspects share <path>`.");
 }
 

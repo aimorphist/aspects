@@ -82,10 +82,30 @@ export async function searchRegistry(params: {
   q?: string;
   category?: string;
   trust?: string;
+  implements?: string;
   limit?: number;
   offset?: number;
 }): Promise<ApiSearchResult> {
   return api.searchAspects(params);
+}
+
+/**
+ * Fetch a schema definition. Checks built-in schemas first,
+ * then falls back to API.
+ */
+export async function resolveSchema(ref: string): Promise<unknown | null> {
+  // Check built-in schemas first
+  const { BUILTIN_SCHEMAS } = await import('../schemas/index');
+  if (ref in BUILTIN_SCHEMAS) {
+    return BUILTIN_SCHEMAS[ref];
+  }
+
+  // Try API
+  try {
+    return await api.getSchema(ref);
+  } catch {
+    return null;
+  }
 }
 
 /**

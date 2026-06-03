@@ -5,12 +5,14 @@ import { ApiClientError } from "../../src/lib/api-client";
 let apiGetRegistryImpl: () => Promise<unknown>;
 let apiGetAspectImpl: (name: string) => Promise<unknown>;
 let apiSearchImpl: (params: Record<string, unknown>) => Promise<unknown>;
+let apiGetSchemaImpl: (ref: string) => Promise<unknown>;
 
 mock.module("../../src/lib/api-client", () => ({
   getRegistry: async () => apiGetRegistryImpl(),
   getAspect: async (name: string) => apiGetAspectImpl(name),
   searchAspects: async (params: Record<string, unknown>) =>
     apiSearchImpl(params),
+  getSchema: async (ref: string) => apiGetSchemaImpl(ref),
   clearApiCache: () => {},
   ApiClientError,
 }));
@@ -38,6 +40,7 @@ const {
   getRegistryAspect,
   searchRegistry,
   getAspectDetail,
+  resolveSchema,
   clearRegistryCache,
 } = await import("../../src/lib/registry");
 
@@ -78,6 +81,7 @@ describe("registry", () => {
       },
     });
     apiSearchImpl = async () => ({ total: 0, results: [] });
+    apiGetSchemaImpl = async () => null;
     ofetchImpl = async () => {
       throw new Error("Should not reach GitHub fallback");
     };
@@ -183,6 +187,57 @@ describe("registry", () => {
           500,
         );
       }
+    });
+  });
+
+  describe("searchRegistry with implements", () => {
+    test("passes implements param to api.searchAspects", async () => {
+      let receivedParams: unknown = null;
+      apiSearchImpl = async (params) => {
+        receivedParams = params;
+        return { total: 1, results: [] };
+      };
+      await searchRegistry({ implements: "builtin/personality@1.0.0" });
+      expect(receivedParams).toEqual({ implements: "builtin/personality@1.0.0" });
+    });
+  });
+
+  describe("resolveSchema", () => {
+    test("returns built-in personality schema without API call", async () => {
+      let apiCalled = false;
+      apiGetSchemaImpl = async () => { apiCalled = true; return null; };
+      const result = await resolveSchema("builtin/personality@1.0.0");
+      expect(result).not.toBeNull();
+      expect(apiCalled).toBe(false);
+    });
+
+    test("returns built-in schema-aspect schema without API call", async () => {
+      let apiCalled = false;
+      apiGetSchemaImpl = async () => { apiCalled = true; return null; };
+      const result = await resolveSchema("builtin/schema@1.0.0");
+      expect(result).not.toBeNull();
+      expect(apiCalled).toBe(false);
+    });
+
+    test("falls back to API for unknown schemas", async () => {
+      const fakeSchema = { $schema: "https://json-schema.org/draft/2020-12/schema" };
+      apiGetSchemaImpl = async () => fakeSchema;
+      const result = await resolveSchema("custom/my-schema@1.0.0");
+      expect(result).toEqual(fakeSchema);
+    });
+
+    test("returns null for unknown schema when API returns null", async () => {
+      apiGetSchemaImpl = async () => null;
+      const result = await resolveSchema("unknown/schema@9.9.9");
+      expect(result).toBeNull();
+    });
+
+    test("returns null when API throws", async () => {
+      apiGetSchemaImpl = async () => {
+        throw new ApiClientError("Not found", 404);
+      };
+      const result = await resolveSchema("nonexistent/schema@1.0.0");
+      expect(result).toBeNull();
     });
   });
 

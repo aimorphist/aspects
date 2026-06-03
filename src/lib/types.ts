@@ -53,7 +53,46 @@ export interface SchemaAspect extends AspectBase {
   schema: Record<string, unknown>;
 }
 
-export type Aspect = PersonalityAspect | SchemaAspect;
+/**
+ * New general-purpose aspect format.
+ * Aspects declare which schema(s) they implement and carry
+ * their payload in `data`, validated against those schemas.
+ */
+export interface GeneralAspect {
+  schemaVersion: number;
+  name: string;
+  publisher?: string;
+  version: string;
+  displayName: string;
+  tagline: string;
+  category?: string;
+  tags?: string[];
+  icon?: string;
+  author?: string;
+  license?: string;
+
+  /** Schema refs this aspect conforms to, e.g. ["builtin/personality@1.0.0"] */
+  implements: string[];
+
+  /** The payload — validated against declared schema(s) */
+  data: unknown;
+}
+
+export type LegacyAspect = PersonalityAspect | SchemaAspect;
+export type Aspect = GeneralAspect | LegacyAspect;
+
+export function isGeneralAspect(a: Aspect): a is GeneralAspect {
+  return 'implements' in a && Array.isArray((a as any).implements);
+}
+
+export function isLegacyAspect(a: Aspect): a is LegacyAspect {
+  return !isGeneralAspect(a);
+}
+
+export function isPersonalityAspect(a: Aspect): a is PersonalityAspect | (GeneralAspect & { data: { prompt: string } }) {
+  if (isGeneralAspect(a)) return a.implements.includes('builtin/personality@1.0.0');
+  return a.kind !== 'schema';
+}
 
 /**
  * Aspect summary for registry listing (without full prompt)
@@ -67,6 +106,7 @@ export interface AspectSummary {
   trust: 'verified' | 'community' | 'local';
   signature?: string;
   kind?: AspectKind;
+  implements?: string[];
 }
 
 /**
@@ -170,6 +210,7 @@ export interface RegistryAspect {
     publisher?: string;
     trust: 'verified' | 'community';
     kind?: AspectKind;
+    implements?: string[];
   };
 }
 
@@ -199,6 +240,7 @@ export interface ApiSearchResult {
     version: string;
     trust: 'verified' | 'community';
     downloads: number;
+    implements?: string[];
   }>;
 }
 

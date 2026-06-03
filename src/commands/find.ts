@@ -4,7 +4,8 @@ import { fetchRegistryIndex } from "../lib/registry";
 import { readConfig } from "../lib/config";
 import { getAspectPath } from "../utils/paths";
 import { parseAspectFile } from "../lib/parser";
-import type { Aspect, RegistryAspect, InstalledAspect } from "../lib/types";
+import type { Aspect, RegistryAspect, InstalledAspect, LegacyAspect } from "../lib/types";
+import { isLegacyAspect } from "../lib/types";
 
 interface SearchResult {
   aspect: Aspect;
@@ -127,7 +128,7 @@ function fieldMatches(
       if (aspect.author?.toLowerCase().includes(q)) return true;
 
       // Deep search (personality-only fields)
-      if (deep && aspect.kind !== 'schema') {
+      if (deep && isLegacyAspect(aspect) && aspect.kind !== 'schema') {
         if (aspect.prompt?.toLowerCase().includes(q)) return true;
         if (aspect.voiceHints?.styleHints?.toLowerCase().includes(q)) return true;
         if (aspect.modes) {

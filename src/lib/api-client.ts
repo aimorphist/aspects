@@ -198,6 +198,7 @@ export async function searchAspects(params: {
   q?: string;
   category?: string;
   trust?: string;
+  implements?: string;
   limit?: number;
   offset?: number;
 }): Promise<ApiSearchResult> {
@@ -205,11 +206,43 @@ export async function searchAspects(params: {
   if (params.q) searchParams.set('q', params.q);
   if (params.category) searchParams.set('category', params.category);
   if (params.trust) searchParams.set('trust', params.trust);
+  if (params.implements) searchParams.set('implements', params.implements);
   if (params.limit) searchParams.set('limit', String(params.limit));
   if (params.offset) searchParams.set('offset', String(params.offset));
 
   const query = searchParams.toString();
   return apiFetch<ApiSearchResult>(`/search${query ? `?${query}` : ''}`);
+}
+
+/**
+ * GET /schemas/:ref - Fetch a schema definition (future)
+ * For now, returns null — built-in schemas are bundled client-side.
+ */
+export async function getSchema(ref: string): Promise<unknown | null> {
+  try {
+    return await apiFetch<unknown>(`/schemas/${encodeURIComponent(ref)}`);
+  } catch (err) {
+    if (err instanceof ApiClientError && err.statusCode === 404) {
+      return null;
+    }
+    throw err;
+  }
+}
+
+/**
+ * POST /schemas - Publish a new schema definition (future, auth required)
+ */
+export async function publishSchema(schema: {
+  ref: string;
+  schema: unknown;
+  displayName: string;
+  description: string;
+}): Promise<{ ok: true; ref: string }> {
+  return apiFetch<{ ok: true; ref: string }>('/schemas', {
+    method: 'POST',
+    body: schema,
+    auth: true,
+  });
 }
 
 /**

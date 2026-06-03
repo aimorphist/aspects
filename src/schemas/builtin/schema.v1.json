@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://aspects.sh/schemas/builtin/schema/v1",
+  "title": "SchemaAspect data payload",
+  "description": "Data fields for a schema-kind aspect — a bundled JSON Schema document (e.g. an archiform definition).",
+  "type": "object",
+  "required": ["schema"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "type": "object",
+      "description": "A JSON Schema document (draft 2020-12). Must be a plain object; size is capped at 200 000 bytes when serialised.",
+      "maxProperties": 1000
+    }
+  }
+}

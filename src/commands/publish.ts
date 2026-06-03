@@ -7,6 +7,8 @@ import { aspectSchema } from "../lib/schema";
 import { publishAspect, ApiClientError } from "../lib/api-client";
 import { getAuth, isLoggedIn, findInstalledAspect, getDefaultHandle, getHandles, hasHandlePermission } from "../lib/config";
 import { c, icons } from "../utils/colors";
+import { isGeneralAspect } from "../lib/types";
+import { getSchemaRegistry } from "../lib/schema-registry";
 
 const MAX_ASPECT_SIZE = 51200; // 50KB
 
@@ -431,6 +433,16 @@ async function validateAspect(
   }
 
   const aspect = result.data;
+
+  // For GeneralAspects, validate data against declared schemas
+  if (isGeneralAspect(aspect as any)) {
+    const registry = getSchemaRegistry();
+    const schemaResult = registry.validate(aspect as any);
+    if (!schemaResult.valid) {
+      return { valid: false, errors: schemaResult.errors };
+    }
+  }
+
   return {
     valid: true,
     content,

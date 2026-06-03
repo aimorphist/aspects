@@ -38,6 +38,10 @@ For advanced filtering, use 'aspects find' with boolean operators.`,
       type: 'string',
       description: 'Filter by kind (personality, schema)',
     },
+    implements: {
+      type: 'string',
+      description: 'Filter by implements ref (e.g. builtin/personality@1.0.0)',
+    },
     limit: {
       type: 'string',
       description: 'Max results (default 20, max 100)',
@@ -52,6 +56,7 @@ For advanced filtering, use 'aspects find' with boolean operators.`,
     const category = args.category as string | undefined;
     const trust = args.trust as string | undefined;
     const kind = args.kind as string | undefined;
+    const implementsFilter = args.implements as string | undefined;
     const limit = args.limit ? parseInt(args.limit as string, 10) : undefined;
     const offset = args.offset ? parseInt(args.offset as string, 10) : undefined;
 
@@ -63,7 +68,7 @@ For advanced filtering, use 'aspects find' with boolean operators.`,
     // Try API-based search first (skipped when --kind filter is set, since
     // the live API doesn't yet surface kind in search results — fall back to
     // the registry index which carries kind metadata).
-    if (!kind) try {
+    if (!kind && !implementsFilter) try {
       const result = await searchRegistry({ q: query, category, trust, limit, offset });
 
       if (result.results.length === 0) {
@@ -90,6 +95,9 @@ For advanced filtering, use 'aspects find' with boolean operators.`,
 
         console.log(`  ${c.aspect(item.name)}${c.version(`@${item.version}`)}${verified}  ${downloads}`);
         console.log(`    ${c.muted(item.tagline)}`);
+        if (item.implements && item.implements.length > 0) {
+          console.log(`    ${c.dim(`implements: ${item.implements.join(', ')}`)}`);
+        }
         console.log();
       }
       return;
@@ -132,6 +140,11 @@ For advanced filtering, use 'aspects find' with boolean operators.`,
       matches = matches.filter(([, info]) => (info.metadata.kind ?? 'personality') === kind);
     }
 
+    // Apply implements filter
+    if (implementsFilter) {
+      matches = matches.filter(([, info]) => info.metadata.implements?.includes(implementsFilter));
+    }
+
     if (matches.length === 0) {
       console.log();
       if (query) {
@@ -154,6 +167,9 @@ For advanced filtering, use 'aspects find' with boolean operators.`,
 
       console.log(`  ${c.aspect(name)}${c.version(`@${info.latest}`)}${verified}`);
       console.log(`    ${c.muted(info.metadata.tagline)}`);
+      if (info.metadata.implements && info.metadata.implements.length > 0) {
+        console.log(`    ${c.dim(`implements: ${info.metadata.implements.join(', ')}`)}`);
+      }
       console.log();
     }
   },
