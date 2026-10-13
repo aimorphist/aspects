@@ -44,3 +44,10 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .dolt/
 *.db
 .beads-credential-key
+
+# Intention scratch (conductor isolate, spawn stage, harness session)
+.worktrees/
+.spawns/
+.omc/
+.omx/
+groups/*/inventory.json
